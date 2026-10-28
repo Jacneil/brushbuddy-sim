@@ -132,6 +132,10 @@
   .peerbtn { flex:none; font-size:10px; padding:6px 10px; border-radius:8px; border:1px solid #4d7cff88;
              background:#4d7cff33; color:#cfe0ff; cursor:pointer; }
   .peerbtn:disabled { opacity:.35; cursor:default; }
+
+  /* Idle dim + auto-sleep overlay (mirrors firmware backlight/sleep timers) */
+  #sleepDim { position:fixed; inset:0; background:#000; opacity:0; pointer-events:none;
+              transition:opacity 1.2s; z-index:60; }
 </style>
 </head>
 <body>
@@ -250,6 +254,8 @@
     <div class="rnote">Three quick screens: drag pad, expression faces, touch &amp; food keys.</div>
   </div>
 </div>
+
+<div id="sleepDim" aria-hidden="true"></div>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -285,6 +291,7 @@ function defaultSound(e){
 
 // snd: explicit reaction sound ('' = silent, undefined = default for expression)
 function setExpr(e, snd){
+  lastActivity = performance.now();
   const changed = e !== expr;
   if (!changed && snd === undefined) return;
   if (changed) {
@@ -304,7 +311,7 @@ function cycle(){
   auto = !auto;
   if (auto) {
     autoIdx = 0; setExpr(EXPRS[0]);
-    autoTimer = setInterval(() => { autoIdx=(autoIdx+1)%EXPRS.length; setExpr(EXPRS[autoIdx]); }, 2200);
+    autoTimer = setInterval(() => { autoIdx=(autoIdx+1)%EXPRS.length; setExpr(EXPRS[autoIdx]); }, 8000);
   } else { clearInterval(autoTimer); }
 }
 
@@ -385,6 +392,7 @@ function wakeIfNeeded() {
 }
 
 function sendCmd(text) {
+  lastActivity = performance.now();
   const i = text.indexOf(',');
   const op = i < 0 ? text : text.slice(0, i);
   const arg = i < 0 ? '' : text.slice(i + 1);
@@ -658,6 +666,9 @@ let blinkPhase = 0;
 let blinkTimer = 0;
 let nextBlink = 2000 + Math.random()*2000;
 let lastSleepSound = 0;
+let lastActivity = performance.now();
+window.addEventListener('pointerdown', () => { lastActivity = performance.now(); });
+window.addEventListener('keydown', () => { lastActivity = performance.now(); });
 
 // Derpy state
 let derpyStart = 0;
@@ -907,6 +918,16 @@ function loop(now){
   lerpCur(target, dt);
 
   updateBlink(dt);
+
+  // Idle mirroring firmware: dim at 30 s, auto-sleep at 5 min
+  const idleFor = now - lastActivity;
+  const dim = document.getElementById('sleepDim');
+  if (dim) {
+    dim.style.opacity = idleFor > 30000
+      ? Math.min(0.8, (idleFor - 30000) / 2000 * 0.8).toFixed(2)
+      : 0;
+  }
+  if (idleFor > 300000 && expr !== 'SLEEP' && !auto) setExpr('SLEEP');
 
   // sleeping sounds while in SLEEP
   if (expr==='SLEEP') {
