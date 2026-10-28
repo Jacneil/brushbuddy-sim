@@ -463,7 +463,8 @@ function updateRemoteUI() {
   const b = document.getElementById('wtExpr'); if (b) b.textContent = expr;
   const pb = document.getElementById('phBatt'); if (pb) pb.textContent = batt;
   const wb = document.getElementById('wtBatt'); if (wb) wb.textContent = batt;
-  const cg = document.getElementById('phChg'); if (cg) cg.textContent = chargingSim ? ' · ⚡' : '';
+  const cg = document.getElementById('phChg');
+  if (cg) { cg.textContent = chargingSim ? ' · ⚡' : ''; cg.style.color = '#34c759'; }
 }
 
 // ---------- Remote UI construction ----------
@@ -703,6 +704,7 @@ window.addEventListener('keydown', () => { lastActivity = performance.now(); });
 
 // New-behavior state (mirrors firmware)
 let chargingSim = false;
+let chgStart = 0;            // plug-in moment: green flood → bubble-away
 let batt = 91;
 let bootStart = 0, bootTimer = 0;
 let lastBattPoll = 0, lastBattTick = 0, lastBattWarn = -1e9;
@@ -759,6 +761,7 @@ function updateBlinkBoot(dt){
 // Demo buttons (mirror the firmware behaviors on demand)
 function toggleCharging(){
   chargingSim = !chargingSim;
+  chgStart = chargingSim ? performance.now() : 0;  // starts the green flood
   const b = document.getElementById('btnChg');
   if (b) b.classList.toggle('active', chargingSim);
   updateRemoteUI();
@@ -963,15 +966,20 @@ function drawEye(cx, cy, e, isLeft, t, op){
     }
   }
 
-  // happy curve (animated) - smiling crescent
+  // happy bottom eyelid (animated): wide + shallow — covers much more of the
+  // eye horizontally while intruding far less vertically (natural smile)
   if (cur.happyP > 0.01 && e !== 'LOVE') {
     ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(cx, cy+54, 58*cur.happyP, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 70, 88 * cur.happyP, 52 * cur.happyP, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
-  // love curve (animated)
+  // love bottom eyelid (animated): same idea, even wider/shallower
   if (cur.loveP > 0.01) {
     ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(cx, cy+64, 48*cur.loveP, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 70, 94 * cur.loveP, 44 * cur.loveP, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
   // squint
   if (cur.squint) {
@@ -1018,16 +1026,20 @@ function drawEye(cx, cy, e, isLeft, t, op){
     ctx.fillRect(cx-80, cy-80+cur.bottomLid, 160, 160-cur.bottomLid);
   }
 
-  // Charging face (mirrors firmware): pulsing bolt + rising hollow bubbles.
-  // Only while charging and IDLE — sleeping stays asleep, interactions show normally.
+  // Charging face (mirrors firmware):
+  //   1) plug-in floods the eye with green liquid (0.5 s),
+  //   2) the liquid bubbles away like it's boiling off (to 1.8 s),
+  //   3) steady state: green hollow bubbles + GREEN lightning bolt.
   if (chargingSim && e === 'IDLE') {
+    const GREEN = '#34c759';
+    // --- steady face (drawn first so the draining liquid reveals it) ---
     for (let i = 0; i < 3; i++) {
       const ph = ((t * 0.45 + i * 0.37) % 1 + 1) % 1;
       const bx = cx + Math.sin(t * 1.1 + i * 2.1) * 44;
       const by = cy + 72 - ph * 118;
       const br = 3 + i + ph * 3;
       if (by - br > cy - 64) {
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = GREEN;
         ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#fff';
         ctx.beginPath(); ctx.arc(bx, by, Math.max(1, br - 2), 0, Math.PI*2); ctx.fill();
@@ -1035,7 +1047,7 @@ function drawEye(cx, cy, e, isLeft, t, op){
     }
     const pulse = 1 + 0.10 * Math.sin(t * 6);
     const bolt = [[-2,-24],[9,-5],[3,-5],[7,9],[-5,-7],[1,-7],[-7,-18]];
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = GREEN;
     ctx.beginPath();
     for (let i = 0; i < bolt.length; i++) {
       const x = cx + bolt[i][0] * pulse, y = cy + bolt[i][1] * pulse;
@@ -1043,6 +1055,43 @@ function drawEye(cx, cy, e, isLeft, t, op){
     }
     ctx.closePath();
     ctx.fill();
+
+    // --- plug-in transition: flood, then bubble the liquid away ---
+    const el = chgStart ? (performance.now() - chgStart) : 1e9;
+    const FILL = 500, TRANS = 1800;
+    if (el < TRANS) {
+      let level; // px of green liquid from the bottom of the eye (cy + 80)
+      if (el < FILL) {
+        let f = el / FILL; f = f * f * (3 - 2 * f);
+        level = f * 160;
+      } else {
+        let f = (el - FILL) / (TRANS - FILL); f = f * f * (3 - 2 * f);
+        level = (1 - f) * 160;
+      }
+      if (level > 0.5) {
+        const top = cy + 80 - level;
+        ctx.fillStyle = GREEN;
+        ctx.fillRect(cx - 80, top, 160, level);
+        // blobby liquid surface
+        for (let x = -4; x < 168; x += 12) {
+          const wy = top + Math.sin(x * 0.13 + t * 5) * 2;
+          ctx.beginPath(); ctx.arc(cx - 80 + x, wy, 6, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      // green bubbles boiling off the surface while it drains
+      if (el >= FILL) {
+        const f = (el - FILL) / (TRANS - FILL);
+        ctx.fillStyle = GREEN;
+        for (let i = 0; i < 7; i++) {
+          const p = f * 1.25 + i * 0.15;
+          if (p > 1) continue;
+          const by = cy + 70 - p * 140;
+          const br = Math.round((1 - f) * (3 + (i % 3))) + 1;
+          const bx = cx - 56 + i * 19 + Math.sin(t * 3 + i) * 6;
+          ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
   }
 
   // blink mask
