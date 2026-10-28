@@ -10,6 +10,86 @@
   button { padding:8px 14px; background:#2a2d3a; color:#eee; border:1px solid #444; border-radius:6px; cursor:pointer; }
   button:hover { background:#3a3d4a; }
   #status { margin-top:10px; font-size:13px; color:#aaa; }
+
+  /* ---------- Remote devices ---------- */
+  #remotes { display:flex; gap:36px; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-top:26px; }
+  .rlabel { text-align:center; font-size:13px; color:#9aa; margin-bottom:8px; letter-spacing:.4px; }
+  .rnote { text-align:center; font-size:11px; color:#667; max-width:300px; margin-top:8px; line-height:1.5; }
+
+  /* iPhone frame */
+  .iphone { width:320px; height:640px; background:#000; border-radius:52px; padding:11px;
+            box-shadow: 0 0 0 2px #3a3d47, 0 18px 50px rgba(0,0,0,.6); position:relative; }
+  .iphone .screen { width:100%; height:100%; background:#0b0b0e; border-radius:42px; overflow:hidden;
+                    position:relative; display:flex; flex-direction:column; }
+  .island { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:96px; height:26px;
+            background:#000; border-radius:14px; z-index:5; }
+  .istatus { display:flex; justify-content:space-between; padding:14px 22px 4px; font-size:11px; color:#ddd; }
+  .ipage { flex:1; overflow-y:auto; padding:6px 14px 18px; scrollbar-width:none; }
+  .ipage::-webkit-scrollbar { display:none; }
+  .ititle { font-size:17px; font-weight:700; color:#fff; text-align:center; margin:6px 0 10px; }
+
+  .banner { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.06);
+            border-radius:12px; padding:9px 11px; margin-bottom:12px; }
+  .banner .dot { width:8px; height:8px; border-radius:50%; background:#3ddc6e; flex:none; }
+  .banner .btxt { flex:1; min-width:0; }
+  .banner .b1 { font-size:11.5px; font-weight:600; color:#eee; }
+  .banner .b2 { font-size:10px; color:#8b8f9a; }
+
+  .pad { background:rgba(255,255,255,.06); border-radius:14px; padding:12px; margin-bottom:12px;
+         -webkit-user-select:none; user-select:none; touch-action:none; }
+  .padhead { font-size:9.5px; font-weight:700; color:#8b8f9a; letter-spacing:.8px; text-transform:uppercase; margin-bottom:8px; }
+  .padarea { position:relative; width:100%; aspect-ratio:1; border-radius:50%; cursor:grab;
+             background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.10), rgba(255,255,255,.03) 70%);
+             border:1px solid rgba(255,255,255,.15); touch-action:none; }
+  .padarea:active { cursor:grabbing; }
+  .padarea::before, .padarea::after { content:''; position:absolute; background:rgba(255,255,255,.12); }
+  .padarea::before { left:50%; top:12%; bottom:12%; width:1px; }
+  .padarea::after  { top:50%; left:12%; right:12%; height:1px; }
+  .puck { position:absolute; width:26px; height:26px; border-radius:50%; background:#fff;
+          transform:translate(-50%,-50%); transition:box-shadow .2s, width .15s, height .15s;
+          box-shadow:0 0 0 rgba(255,105,180,0); pointer-events:none; }
+  .puck.drag { background:#ff69b4; box-shadow:0 0 16px rgba(255,105,180,.8); }
+  .padnote { font-size:9px; color:#666d7a; text-align:center; margin-top:7px; }
+
+  .sect { font-size:9.5px; font-weight:700; color:#8b8f9a; letter-spacing:.8px; text-transform:uppercase;
+          margin:10px 0 6px; }
+  .grid { display:grid; gap:6px; }
+  .grid.c4 { grid-template-columns:repeat(4,1fr); }
+  .grid.c3 { grid-template-columns:repeat(3,1fr); }
+  .grid.c2 { grid-template-columns:repeat(2,1fr); }
+  .key { padding:8px 2px; border-radius:10px; font-size:9.5px; font-weight:600; color:#fff;
+         border:1px solid; cursor:pointer; text-align:center; -webkit-user-select:none; user-select:none; }
+  .key:active { transform:scale(.94); }
+  .ipad .key { font-size:10px; padding:9px 2px; }
+
+  /* Apple Watch frame */
+  .watch { position:relative; padding-top:34px; }
+  .band { position:absolute; left:50%; transform:translateX(-50%); width:74px; background:#23252d; z-index:0; }
+  .band.top { top:0; height:44px; border-radius:12px 12px 4px 4px; }
+  .band.bot { bottom:0; height:52px; border-radius:4px 4px 12px 12px; }
+  .watchbody { position:relative; z-index:1; width:196px; height:232px; background:#111218;
+               border-radius:56px; padding:13px; box-shadow: 0 0 0 3px #4a4d58, 0 14px 40px rgba(0,0,0,.65); }
+  .crown { position:absolute; right:-9px; top:70px; width:11px; height:34px; background:#5a5e6b;
+           border-radius:4px; box-shadow: inset -2px 0 2px rgba(0,0,0,.5); }
+  .sidebtn { position:absolute; right:-7px; top:124px; width:7px; height:44px; background:#4a4d58; border-radius:4px; }
+  .wscreen { width:100%; height:100%; background:#000; border-radius:44px; overflow:hidden;
+             position:relative; display:flex; flex-direction:column; color:#fff; }
+  .wstatus { display:flex; justify-content:space-between; font-size:9.5px; color:#bbb; padding:12px 18px 2px; }
+  .wbody { flex:1; display:flex; flex-direction:column; padding:2px 10px 8px; min-height:0; }
+  .wtabbar { display:flex; gap:4px; padding:4px 8px 9px; }
+  .wtab { flex:1; text-align:center; font-size:8.5px; padding:5px 0; border-radius:9px;
+          background:rgba(255,255,255,.08); color:#9aa0ad; cursor:pointer; }
+  .wtab.on { background:#ff69b4; color:#1a1a1a; font-weight:700; }
+  .wpage { flex:1; display:none; flex-direction:column; min-height:0; }
+  .wpage.on { display:flex; }
+  .wexpr { font-size:11px; font-weight:700; color:#fff; text-align:center; margin:2px 0 4px; }
+  .wpad { position:relative; flex:1; border-radius:50%; touch-action:none; cursor:grab;
+          background: radial-gradient(circle, rgba(255,255,255,.10), rgba(255,255,255,.02) 75%); }
+  .wpad .puck { width:20px; height:20px; }
+  .wgrid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .wgrid .key { padding:8px 1px; font-size:8.5px; }
+  .wscroll { overflow-y:auto; scrollbar-width:none; }
+  .wscroll::-webkit-scrollbar { display:none; }
 </style>
 </head>
 <body>
@@ -30,6 +110,87 @@
   <button onclick="cycle()">Auto Cycle</button>
 </div>
 <div id="status">IDLE</div>
+
+<div id="remotes">
+  <!-- ===== iPhone remote ===== -->
+  <div>
+    <div class="rlabel">◆ iPhone remote (Bluetooth LE)</div>
+    <div class="iphone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="istatus"><span>9:41</span><span>▮▮▮ ᯤ 91%</span></div>
+        <div class="ipage">
+          <div class="ititle">Brushbuddy</div>
+
+          <div class="banner">
+            <span class="dot"></span>
+            <div class="btxt">
+              <div class="b1">Brushbuddy</div>
+              <div class="b2"><span id="phExpr">IDLE</span> · 91%</div>
+            </div>
+            <button style="font-size:9px;padding:4px 8px" onclick="this.textContent='Scan'">Disconnect</button>
+          </div>
+
+          <div class="pad">
+            <div class="padhead">Eye control</div>
+            <div class="padarea" id="phPad"><div class="puck" id="phPuck" style="left:50%;top:50%"></div></div>
+            <div class="padnote">Drag to steer his eyes</div>
+          </div>
+
+          <div class="sect">Expressions</div>
+          <div class="grid c4" id="phExprGrid"></div>
+
+          <div class="sect">Touch zones</div>
+          <div class="grid c3" id="phTouchGrid"></div>
+
+          <div class="sect">Food</div>
+          <div class="grid c2" id="phFoodGrid"></div>
+
+          <div class="sect">Sounds</div>
+          <div class="grid c4" id="phSoundGrid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="rnote">Same commands the real app sends over BLE — wired to the eyes above.</div>
+  </div>
+
+  <!-- ===== Apple Watch remote ===== -->
+  <div>
+    <div class="rlabel">◆ Apple Watch remote</div>
+    <div class="watch">
+      <div class="band top"></div>
+      <div class="band bot"></div>
+      <div class="watchbody">
+        <div class="crown"></div>
+        <div class="sidebtn"></div>
+        <div class="wscreen">
+          <div class="wstatus"><span>9:41</span><span>91%</span></div>
+          <div class="wbody">
+            <div class="wexpr" id="wtExpr">IDLE</div>
+
+            <div class="wpage on" id="wpPad">
+              <div class="wpad" id="wtPad"><div class="puck" id="wtPuck" style="left:50%;top:50%"></div></div>
+            </div>
+
+            <div class="wpage wscroll" id="wpFaces">
+              <div class="wgrid" id="wtFaces"></div>
+            </div>
+
+            <div class="wpage wscroll" id="wpFun">
+              <div class="wgrid" id="wtFun"></div>
+            </div>
+          </div>
+          <div class="wtabbar">
+            <div class="wtab on" data-page="wpPad">Eyes</div>
+            <div class="wtab" data-page="wpFaces">Faces</div>
+            <div class="wtab" data-page="wpFun">Fun</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="rnote">Three quick screens: drag pad, expression faces, touch &amp; food keys.</div>
+  </div>
+</div>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -59,6 +220,7 @@ function setExpr(e){
   expr = e;
   transT = 0;
   document.getElementById('status').textContent = e;
+  updateRemoteUI();
   if (e==='HAPPY'||e==='LOVE') play('phee');
   else if (e==='ANGRY'||e==='HATE') play('hiss');
   else if (e==='SURPRISED') play('chirp');
@@ -78,6 +240,148 @@ function cycle(){
     autoTimer = setInterval(() => { autoIdx=(autoIdx+1)%EXPRS.length; setExpr(EXPRS[autoIdx]); }, 2200);
   } else { clearInterval(autoTimer); }
 }
+
+// ---------- Remote command router ----------
+// Implements the exact text protocol the ESP32-S3 accepts over BLE,
+// so trying a key here matches what the real iPhone/Watch app sends.
+const gaze = { until: 0, x: 0, y: 0 };
+const clampf = (v, lo, hi) => v < lo ? lo : (v > hi ? hi : v);
+const VALID_SOUNDS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop'];
+
+function wakeIfNeeded() {
+  if (expr === 'SLEEP') { setExpr('IDLE'); play('wake'); }
+}
+
+function sendCmd(text) {
+  const i = text.indexOf(',');
+  const op = i < 0 ? text : text.slice(0, i);
+  const arg = i < 0 ? '' : text.slice(i + 1);
+
+  if (op === 'EXPR') {
+    if (arg === 'SLEEP') { setExpr('SLEEP'); return; }
+    wakeIfNeeded();
+    setExpr(EXPRS.includes(arg) ? arg : 'IDLE');
+  } else if (op === 'EYE') {
+    const [xs, ys] = arg.split(',');
+    const x = parseFloat(xs), y = parseFloat(ys);
+    if (isNaN(x) || isNaN(y)) return;
+    wakeIfNeeded();
+    gaze.x = clampf(x - 80, -46, 46);
+    gaze.y = clampf(y - 80, -34, 34);
+    gaze.until = performance.now() + 2500;   // matches REMOTE_GAZE_MS in firmware
+  } else if (op === 'TOUCH') {
+    wakeIfNeeded();
+    const map = { head:'HAPPY', earL:'SURPRISED', earR:'SURPRISED', nose:'SQUINT',
+                  nap:'SLEEPY', grab:'ANGRY', derpy:'DERPY', drift:'DRIFT' };
+    if (map[arg]) setExpr(map[arg]);
+  } else if (op === 'FOOD') {
+    wakeIfNeeded();
+    setExpr(arg === 'love' ? 'LOVE' : 'HATE');
+  } else if (op === 'SOUND') {
+    if (VALID_SOUNDS.includes(arg)) {
+      if (expr === 'SLEEP' && arg !== 'sleep' && arg !== 'sleeploop') setExpr('IDLE');
+      play(arg);
+    }
+  }
+}
+
+function updateRemoteUI() {
+  const a = document.getElementById('phExpr'); if (a) a.textContent = expr;
+  const b = document.getElementById('wtExpr'); if (b) b.textContent = expr;
+}
+
+// ---------- Remote UI construction ----------
+function makeKey(label, color, cmd) {
+  const b = document.createElement('div');
+  b.className = 'key';
+  b.textContent = label;
+  b.style.borderColor = color;
+  b.style.background = color + '40';
+  b.addEventListener('pointerdown', e => { e.preventDefault(); sendCmd(cmd); });
+  return b;
+}
+function fillGrid(id, items) {
+  const g = document.getElementById(id);
+  if (!g) return;
+  items.forEach(([label, color, cmd]) => g.appendChild(makeKey(label, color, cmd)));
+}
+
+const EXPR_KEYS = [
+  ['IDLE','#4d7cff'], ['HAPPY','#ff69b4'], ['SQUINT','#e6c200'], ['ANGRY','#ff453a'],
+  ['LOVE','#ff69b4'], ['HATE','#ff453a'], ['SURPRISED','#ff9f0a'], ['SLEEPY','#7d5fff'],
+  ['SLEEP','#7d5fff'], ['DERPY','#20c9b4'], ['DRIFT','#20c9b4']
+];
+const TOUCH_KEYS = [
+  ['Head','head','#34c759'], ['Left ear','earL','#32ade6'], ['Right ear','earR','#32ade6'],
+  ['Nose','nose','#e6c200'], ['Grab!','grab','#ff453a'], ['Nap','nap','#7d5fff']
+];
+const FOOD_KEYS = [
+  ['Conjuring Ink ♥','love','#ff69b4'], ['Rival ✕','hate','#ff453a']
+];
+const SOUND_KEYS = ['phee','hiss','chirp','grumble','wake'];
+
+fillGrid('phExprGrid',  EXPR_KEYS.map(([l,c]) => [l, c, 'EXPR,' + l]));
+fillGrid('phTouchGrid', TOUCH_KEYS.map(([l,z,c]) => [l, c, 'TOUCH,' + z]));
+fillGrid('phFoodGrid',  FOOD_KEYS.map(([l,k,c]) => [l, c, 'FOOD,' + k]));
+fillGrid('phSoundGrid', SOUND_KEYS.map(s => [s[0].toUpperCase() + s.slice(1), '#9b59d0', 'SOUND,' + s]));
+
+// Apple Watch: Faces + Fun pages
+fillGrid('wtFaces', [
+  ['Idle','#4d7cff','EXPR,IDLE'],   ['Happy','#ff69b4','EXPR,HAPPY'],
+  ['Angry','#ff453a','EXPR,ANGRY'], ['Love','#ff69b4','EXPR,LOVE'],
+  ['Sleep','#7d5fff','EXPR,SLEEP'], ['Surprise','#ff9f0a','EXPR,SURPRISED'],
+  ['Derpy','#20c9b4','EXPR,DERPY'], ['Drift','#20c9b4','EXPR,DRIFT']
+]);
+fillGrid('wtFun', [
+  ['Head ♥','#34c759','TOUCH,head'], ['Ears','#32ade6','TOUCH,earL'],
+  ['Nose','#e6c200','TOUCH,nose'],   ['Nap','#7d5fff','TOUCH,nap'],
+  ['Ink ♥','#ff69b4','FOOD,love'],   ['Rival ✕','#ff453a','FOOD,hate']
+]);
+
+// Watch tab bar
+document.querySelectorAll('.wtab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.wtab').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.wpage').forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  document.getElementById(t.dataset.page).classList.add('on');
+}));
+
+// ---------- Draggable eye pads (25 Hz EYE,stream like the real app) ----------
+function wirePad(padId, puckId) {
+  const pad = document.getElementById(padId);
+  const puck = document.getElementById(puckId);
+  if (!pad) return;
+  let last = 0, down = false;
+
+  function apply(e) {
+    const r = pad.getBoundingClientRect();
+    let x = e.clientX - r.left, y = e.clientY - r.top;
+    const cx = r.width / 2, cy = r.height / 2, rad = r.width / 2 - 5;
+    const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+    if (d > rad) { x = cx + dx / d * rad; y = cy + dy / d * rad; }
+    puck.style.left = (x / r.width * 100) + '%';
+    puck.style.top  = (y / r.height * 100) + '%';
+    const now = performance.now();
+    if (now - last > 40) {   // ~25 Hz
+      last = now;
+      sendCmd('EYE,' + Math.round(x / r.width * 160) + ',' + Math.round(y / r.height * 160));
+    }
+  }
+
+  pad.addEventListener('pointerdown', e => {
+    down = true;
+    pad.setPointerCapture(e.pointerId);
+    puck.classList.add('drag');
+    e.preventDefault();
+    apply(e);
+  });
+  pad.addEventListener('pointermove', e => { if (down) apply(e); });
+  const end = () => { down = false; puck.classList.remove('drag'); };
+  pad.addEventListener('pointerup', end);
+  pad.addEventListener('pointercancel', end);
+}
+wirePad('phPad', 'phPuck');
+wirePad('wtPad', 'wtPuck');
 
 // ---------- Smooth animated state ----------
 let prevExpr = 'IDLE';
@@ -231,6 +535,12 @@ function drawEye(cx, cy, e, isLeft, t, op){
   if (e==='DERPY') {
     // eyes look slightly inward
     px = isLeft ? 6 : -6;
+  }
+
+  // Remote pad steers the gaze (mirrors firmware remoteGazeMs override)
+  if (performance.now() < gaze.until) {
+    px = gaze.x;
+    py = gaze.y;
   }
 
   // smooth lerp pupil toward target
