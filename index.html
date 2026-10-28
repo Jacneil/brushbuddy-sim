@@ -547,7 +547,6 @@ function buildTriggers(){
   });
 }
 buildTriggers();
-buildSoundList();
 
 // ---------- Virtual head pad (tap / double / triple / 4×pat / hold) ----------
 const hp = { down:false, start:0, taps:0, lastTap:0, holdFired:false, holdTimer:null, decayTimer:null };
@@ -1124,6 +1123,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+buildSoundList();
 startBoot();
 </script>
 </body>
