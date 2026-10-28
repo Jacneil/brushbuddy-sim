@@ -102,6 +102,36 @@
   .tsel { background:#1c1e26; color:#eee; border:1px solid #3a3d4a; border-radius:8px;
           padding:6px 4px; font-size:10px; flex:1; min-width:0; cursor:pointer; }
   .tsel:focus { outline:1px solid #ff69b4; }
+  .purrbtn { flex:none; width:28px; height:28px; border-radius:8px; border:1px solid #3a3d4a;
+             background:#1c1e26; color:#666d7a; font-size:12px; cursor:pointer; padding:0; }
+  .purrbtn.on { background:#ff69b440; border-color:#ff69b4; color:#ff69b4; }
+
+  /* Head gesture pad (virtual touch) */
+  .headpad-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .headpad { width:118px; height:118px; border-radius:50%; display:flex; align-items:center;
+             justify-content:center; cursor:pointer; touch-action:none; -webkit-user-select:none;
+             user-select:none; font-size:13px; font-weight:700; color:#fff;
+             background: radial-gradient(circle at 50% 40%, #3d6cff55, #3d6cff18 70%);
+             border:2px solid #4d7cff88;
+             box-shadow:0 6px 18px rgba(0,0,0,.4), inset 0 -6px 14px rgba(0,0,0,.35);
+             transition: transform .08s, box-shadow .12s, border-color .12s; }
+  .headpad.press { transform:scale(.93); border-color:#ff69b4;
+                   box-shadow:0 2px 8px rgba(0,0,0,.5), inset 0 -3px 10px rgba(0,0,0,.4);
+                   background: radial-gradient(circle at 50% 40%, #ff69b455, #ff69b418 70%); }
+
+  /* Peer toggle */
+  .peerrow { display:flex; gap:8px; align-items:center; background:rgba(255,255,255,.04);
+             border-radius:10px; padding:8px 10px; }
+  .peerlabel { flex:1; font-size:10px; color:#ccc; }
+  .sw { width:38px; height:22px; border-radius:12px; background:#3a3d4a; position:relative;
+        cursor:pointer; flex:none; transition: background .2s; }
+  .sw::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px;
+               border-radius:50%; background:#fff; transition:left .2s; }
+  .sw.on { background:#34c759; }
+  .sw.on::after { left:18px; }
+  .peerbtn { flex:none; font-size:10px; padding:6px 10px; border-radius:8px; border:1px solid #4d7cff88;
+             background:#4d7cff33; color:#cfe0ff; cursor:pointer; }
+  .peerbtn:disabled { opacity:.35; cursor:default; }
 </style>
 </head>
 <body>
@@ -152,8 +182,14 @@
           <div class="sect">Expressions</div>
           <div class="grid c4" id="phExprGrid"></div>
 
-          <div class="sect">Touch</div>
-          <div class="grid c1" id="phTouchGrid"></div>
+          <div class="sect">Touch — head pad</div>
+          <div class="headpad-wrap">
+            <div class="headpad" id="phHead"><span>head</span></div>
+            <div class="padnote">tap · 2× double · 3× triple · 4×+ pat · hold 1.2 s</div>
+          </div>
+
+          <div class="sect">Sensors</div>
+          <div class="grid c3" id="phSensorGrid"></div>
 
           <div class="sect">Food</div>
           <div class="grid c2" id="phFoodGrid"></div>
@@ -163,6 +199,14 @@
 
           <div class="sect">Triggers → reaction</div>
           <div id="trigList"></div>
+
+          <div class="sect">Peer notice</div>
+          <div class="peerrow">
+            <span class="peerlabel">Spot other Brushbuddies</span>
+            <div class="sw" id="peerSw"></div>
+            <button class="peerbtn" id="peerBtn" disabled>Spot!</button>
+          </div>
+          <div class="padnote" style="text-align:left">Scans 2 s every 30 s only when ON — off saves battery.</div>
         </div>
       </div>
     </div>
@@ -272,39 +316,66 @@ const pupilL = { x: 0, y: 0 }, pupilR = { x: 0, y: 0 };
 let frameDt = 16;
 
 // ---------- Configurable trigger reactions ----------
-// Each physical trigger maps to any expression + sound, independently.
-// Persisted in localStorage here; the firmware keeps the same mapping in
-// NVS and accepts it over BLE via CFG,<trigger>,<EXPR>,<sound>.
+// Each trigger maps to any expression + sound + optional purr vibration,
+// independently. Persisted in localStorage here; the firmware keeps the same
+// mapping in NVS and accepts it over BLE: CFG,<t>,<EXPR>,<snd>[,purr|-]
 const TRIGGER_DEFS = [
-  ['head', 'Head touch'],
-  ['love', 'Ink · north pole'],
-  ['hate', 'Rival · south pole']
+  ['head',    'Head pet'],
+  ['double',  'Double tap'],
+  ['triple',  'Triple tap'],
+  ['hold',    'Hold'],
+  ['pat',     'Rapid pat ×4+'],
+  ['pickup',  'Picked up'],
+  ['shake',   'Shaken'],
+  ['tilt',    'Tilted'],
+  ['love',    'Ink · north pole'],
+  ['hate',    'Rival · south pole']
 ];
 const DEFAULT_MAP = {
-  head: { emo: 'HAPPY', snd: 'phee' },
-  love: { emo: 'LOVE',  snd: 'phee' },
-  hate: { emo: 'HATE',  snd: 'hiss' }
+  head:   { emo:'HAPPY',     snd:'phee',    purr:false },
+  double: { emo:'SURPRISED', snd:'chirp',   purr:false },
+  triple: { emo:'DERPY',     snd:'chirp',   purr:false },
+  hold:   { emo:'SLEEPY',    snd:'grumble', purr:false },
+  pat:    { emo:'LOVE',      snd:'',        purr:true  },
+  pickup: { emo:'SURPRISED', snd:'chirp',   purr:false },
+  shake:  { emo:'ANGRY',     snd:'hiss',    purr:false },
+  tilt:   { emo:'SQUINT',    snd:'grumble', purr:false },
+  love:   { emo:'LOVE',      snd:'phee',    purr:false },
+  hate:   { emo:'HATE',      snd:'hiss',    purr:false }
 };
 const SOUND_OPTIONS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop',''];
 
 let reactMap = JSON.parse(JSON.stringify(DEFAULT_MAP));
 try {
   const saved = JSON.parse(localStorage.getItem('bbTriggerMap') || 'null');
-  if (saved) reactMap = Object.assign(reactMap, saved);
+  if (saved) Object.keys(reactMap).forEach(k => { if (saved[k]) Object.assign(reactMap[k], saved[k]); });
 } catch(e){}
-// sanitize anything invalid
+// sanitize anything invalid / missing from older versions
 Object.keys(DEFAULT_MAP).forEach(k => {
   const r = reactMap[k];
   if (!EXPRS.includes(r.emo)) r.emo = DEFAULT_MAP[k].emo;
   if (!SOUND_OPTIONS.includes(r.snd)) r.snd = DEFAULT_MAP[k].snd;
+  if (typeof r.purr !== 'boolean') r.purr = DEFAULT_MAP[k].purr;
 });
 function saveMap(){ try { localStorage.setItem('bbTriggerMap', JSON.stringify(reactMap)); } catch(e){} }
+
+// Purr state (visual wobble + device vibration where supported)
+let purrUntil = 0;
+function startPurr(ms){
+  purrUntil = performance.now() + ms;
+  if (navigator.vibrate) {
+    const pat = [];
+    for (let i = 0; i < Math.ceil(ms / 300); i++) pat.push(120, 180);
+    try { navigator.vibrate(pat); } catch(e){}
+  }
+}
 
 function fireTrigger(name){
   const r = reactMap[name];
   if (!r) return;
   if (expr === 'SLEEP' && r.emo !== 'SLEEP') { setExpr('IDLE'); play('wake'); }
   setExpr(r.emo, r.snd);
+  if (r.purr) startPurr(6000);
 }
 const clampf = (v, lo, hi) => v < lo ? lo : (v > hi ? hi : v);
 const VALID_SOUNDS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop'];
@@ -331,13 +402,18 @@ function sendCmd(text) {
     gaze.y = clampf(y - 80, -34, 34);
     gaze.until = performance.now() + 2500;   // matches REMOTE_GAZE_MS in firmware
   } else if (op === 'TOUCH') {
-    if (arg === 'head') { fireTrigger('head'); return; }
+    if (TRIGGER_DEFS.some(([k]) => k === arg)) { fireTrigger(arg); return; }
     wakeIfNeeded();
     const map = { earL:'SURPRISED', earR:'SURPRISED', nose:'SQUINT',
                   nap:'SLEEPY', grab:'ANGRY', derpy:'DERPY', drift:'DRIFT' };
     if (map[arg]) setExpr(map[arg]);
   } else if (op === 'FOOD') {
     if (arg === 'love' || arg === 'hate') fireTrigger(arg);
+  } else if (op === 'PURR') {
+    if (arg === 'stop') { purrUntil = 0; if (navigator.vibrate) try { navigator.vibrate(0); } catch(e){} }
+    else { wakeIfNeeded(); startPurr(Math.min(parseInt(arg) || 5000, 30000)); }
+  } else if (op === 'PEER') {
+    setPeer(arg === 'on');
   } else if (op === 'SOUND') {
     if (VALID_SOUNDS.includes(arg)) {
       if (expr === 'SLEEP' && arg !== 'sleep' && arg !== 'sleeploop') setExpr('IDLE');
@@ -380,10 +456,18 @@ const FOOD_KEYS = [
 ];
 const SOUND_KEYS = ['phee','hiss','chirp','grumble','wake'];
 
+const SENSOR_KEYS = [
+  ['Picked up', 'pickup', '#ff9f0a'],
+  ['Shaken',    'shake',  '#ff453a'],
+  ['Tilted',    'tilt',   '#e6c200']
+];
+
 fillGrid('phExprGrid',  EXPR_KEYS.map(([l,c]) => [l, c, 'EXPR,' + l]));
-fillGrid('phTouchGrid', TOUCH_KEYS.map(([l,z,c]) => [l, c, 'TOUCH,' + z]));
+fillGrid('phSensorGrid', SENSOR_KEYS.map(([l,k,c]) => [l, c, 'TOUCH,' + k]));
 fillGrid('phFoodGrid',  FOOD_KEYS.map(([l,k,c]) => [l, c, 'FOOD,' + k]));
-fillGrid('phSoundGrid', SOUND_KEYS.map(s => [s[0].toUpperCase() + s.slice(1), '#9b59d0', 'SOUND,' + s]));
+fillGrid('phSoundGrid', SOUND_KEYS.map(s => [s[0].toUpperCase() + s.slice(1), '#9b59d0', 'SOUND,' + s])
+                                      .concat([['Purr 📳', '#ff69b4', 'PURR,5000']]));
+fillGrid('phTouchGrid', TOUCH_KEYS.map(([l,z,c]) => [l, c, 'TOUCH,' + z])); // (div removed — no-op)
 
 // Trigger mapping UI (persisted)
 function buildTriggers(){
@@ -409,11 +493,75 @@ function buildTriggers(){
     ss.value = reactMap[key].snd;
     ss.addEventListener('change', () => { reactMap[key].snd = ss.value; saveMap(); });
 
-    row.append(lab, se, ss);
+    const pb = document.createElement('button');
+    pb.className = 'purrbtn' + (reactMap[key].purr ? ' on' : '');
+    pb.title = 'purr on this trigger';
+    pb.textContent = '📳';
+    pb.addEventListener('click', () => {
+      reactMap[key].purr = !reactMap[key].purr;
+      pb.classList.toggle('on', reactMap[key].purr);
+      saveMap();
+    });
+
+    row.append(lab, se, ss, pb);
     list.appendChild(row);
   });
 }
 buildTriggers();
+
+// ---------- Virtual head pad (tap / double / triple / 4×pat / hold) ----------
+const hp = { down:false, start:0, taps:0, lastTap:0, holdFired:false, holdTimer:null, decayTimer:null };
+function headPadDown(){
+  const now = performance.now();
+  if (hp.down) return;
+  hp.down = true; hp.start = now; hp.holdFired = false;
+  hp.taps = (now - hp.lastTap > 700) ? 1 : hp.taps + 1;
+  hp.lastTap = now;
+  document.getElementById('phHead').classList.add('press');
+  clearTimeout(hp.holdTimer); clearTimeout(hp.decayTimer);
+  if (hp.taps === 2) sendCmd('TOUCH,double');
+  else if (hp.taps === 3) sendCmd('TOUCH,triple');
+  else if (hp.taps >= 4) { hp.taps = 0; sendCmd('TOUCH,pat'); }
+  else sendCmd('TOUCH,head');
+  hp.holdTimer = setTimeout(() => {
+    if (hp.down && !hp.holdFired) { hp.holdFired = true; sendCmd('TOUCH,hold'); }
+  }, 1200);
+}
+function headPadUp(){
+  if (!hp.down) return;
+  hp.down = false;
+  document.getElementById('phHead').classList.remove('press');
+  clearTimeout(hp.holdTimer);
+  hp.decayTimer = setTimeout(() => { hp.taps = 0; }, 700);
+}
+(function wireHeadPad(){
+  const pad = document.getElementById('phHead');
+  if (!pad) return;
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); pad.setPointerCapture(e.pointerId); headPadDown(); });
+  pad.addEventListener('pointerup', headPadUp);
+  pad.addEventListener('pointercancel', headPadUp);
+})();
+
+// ---------- Peer notice toggle ----------
+let peerOn = false;
+function setPeer(on){
+  peerOn = on;
+  const sw = document.getElementById('peerSw');
+  const btn = document.getElementById('peerBtn');
+  if (sw) sw.classList.toggle('on', on);
+  if (btn) btn.disabled = !on;
+}
+(function wirePeer(){
+  const sw = document.getElementById('peerSw');
+  if (sw) sw.addEventListener('click', () => sendCmd('PEER,' + (peerOn ? 'off' : 'on')));
+  const btn = document.getElementById('peerBtn');
+  if (btn) btn.addEventListener('click', () => {
+    // firmware greeting: wake, then HAPPY + chirp
+    if (!peerOn) return;
+    wakeIfNeeded();
+    setExpr('HAPPY', 'chirp');
+  });
+})();
 
 // Apple Watch: Faces + Fun pages
 fillGrid('wtFaces', [
@@ -769,8 +917,12 @@ function loop(now){
   ctx.fillStyle = '#12141a';
   ctx.fillRect(0,0,320,160);
   const t = now/1000;
-  drawEye(80,80,expr,true,t, (expr==='SLEEP')?0:openness);
-  drawEye(240,80,expr,false,t, (expr==='SLEEP')?0:openness);
+  // purr: gentle whole-eye wobble at the purr breath rate (~2.6 Hz)
+  const purring = now < purrUntil;
+  const jx = purring ? Math.sin(t * 2.6 * Math.PI * 2) * 1.3 : 0;
+  const jy = purring ? Math.cos(t * 2.6 * 2 * Math.PI * 2) * 0.7 : 0;
+  drawEye(80+jx,80+jy,expr,true,t, (expr==='SLEEP')?0:openness);
+  drawEye(240+jx,80+jy,expr,false,t, (expr==='SLEEP')?0:openness);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
