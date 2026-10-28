@@ -136,6 +136,19 @@
   /* Idle dim + auto-sleep overlay (mirrors firmware backlight/sleep timers) */
   #sleepDim { position:fixed; inset:0; background:#000; opacity:0; pointer-events:none;
               transition:opacity 1.2s; z-index:60; }
+
+  /* Sound preset rows (mirrors the app's custom-sound manager) */
+  .sndrow { display:flex; gap:6px; align-items:center; margin-bottom:6px;
+            background:rgba(255,255,255,.04); border-radius:10px; padding:7px 9px; }
+  .sndname { width:58px; font-size:10px; color:#ccc; }
+  .chip { font-size:9px; padding:2px 7px; border-radius:9px; background:#ffffff1a; color:#bbb; }
+  .chip.custom { background:#ff69b488; color:#fff; }
+  .minibtn { font-size:9px; padding:5px 8px; border-radius:8px; border:1px solid #3a3d4a;
+             background:#1c1e26; color:#ddd; cursor:pointer; margin-left:auto; }
+  .minibtn + .minibtn { margin-left:4px; }
+  .minibtn.up { border-color:#4d7cff88; background:#4d7cff33; color:#cfe0ff; }
+  .minibtn.play { border-color:#9b59d088; background:#9b59d033; color:#e2ccff; }
+  button.active { background:#34c759 !important; color:#062 !important; border-color:#34c759 !important; }
 </style>
 </head>
 <body>
@@ -154,8 +167,12 @@
   <button onclick="setExpr('DERPY')">DERPY</button>
   <button onclick="setExpr('DRIFT')">DRIFT</button>
   <button onclick="cycle()">Auto Cycle</button>
+  <button id="btnBoot" onclick="startBoot()">↻ Boot greeting</button>
+  <button id="btnChg" onclick="toggleCharging()">⚡ Charging</button>
+  <button id="btnLow" onclick="demoLowBatt()">Low battery</button>
 </div>
 <div id="status">IDLE</div>
+<div style="font-size:11px;color:#667;margin-top:6px">demo buttons: boot sequence · charging face · low-battery warning</div>
 
 <div id="remotes">
   <!-- ===== iPhone remote ===== -->
@@ -172,7 +189,7 @@
             <span class="dot"></span>
             <div class="btxt">
               <div class="b1">Brushbuddy</div>
-              <div class="b2"><span id="phExpr">IDLE</span> · 91%</div>
+              <div class="b2"><span id="phExpr">IDLE</span> · <span id="phBatt">91</span>%<span id="phChg"></span></div>
             </div>
             <button style="font-size:9px;padding:4px 8px" onclick="this.textContent='Scan'">Disconnect</button>
           </div>
@@ -201,6 +218,11 @@
           <div class="sect">Sounds</div>
           <div class="grid c4" id="phSoundGrid"></div>
 
+          <div class="sect">His sound presets</div>
+          <div id="sndList"></div>
+          <div class="padnote" style="text-align:left">Upload any mp3/wav — plays in this session. The real app stores it on Brushbuddy (NVS-backed).</div>
+          <input type="file" id="sndFile" accept="audio/*" style="display:none">
+
           <div class="sect">Triggers → reaction</div>
           <div id="trigList"></div>
 
@@ -227,7 +249,7 @@
         <div class="crown"></div>
         <div class="sidebtn"></div>
         <div class="wscreen">
-          <div class="wstatus"><span>9:41</span><span>91%</span></div>
+          <div class="wstatus"><span>9:41</span><span><span id="wtBatt">91</span>%</span></div>
           <div class="wbody">
             <div class="wexpr" id="wtExpr">IDLE</div>
 
@@ -276,7 +298,13 @@ const EMBEDDED_AUDIO = {
 };
 const audio = {};
 for (const n in EMBEDDED_AUDIO) { audio[n] = new Audio(EMBEDDED_AUDIO[n]); }
-function play(n){ try { if (audio[n]) { audio[n].currentTime=0; audio[n].play(); } } catch(e){} }
+const customAudio = {};   // preset -> user-uploaded Audio (session, like the app)
+function play(n){
+  try {
+    const a = customAudio[n] || audio[n];
+    if (a) { a.currentTime = 0; a.play(); }
+  } catch(e){}
+}
 
 function defaultSound(e){
   if (e==='HAPPY'||e==='LOVE') return 'phee';
@@ -433,6 +461,9 @@ function sendCmd(text) {
 function updateRemoteUI() {
   const a = document.getElementById('phExpr'); if (a) a.textContent = expr;
   const b = document.getElementById('wtExpr'); if (b) b.textContent = expr;
+  const pb = document.getElementById('phBatt'); if (pb) pb.textContent = batt;
+  const wb = document.getElementById('wtBatt'); if (wb) wb.textContent = batt;
+  const cg = document.getElementById('phChg'); if (cg) cg.textContent = chargingSim ? ' · ⚡' : '';
 }
 
 // ---------- Remote UI construction ----------
@@ -516,6 +547,7 @@ function buildTriggers(){
   });
 }
 buildTriggers();
+buildSoundList();
 
 // ---------- Virtual head pad (tap / double / triple / 4×pat / hold) ----------
 const hp = { down:false, start:0, taps:0, lastTap:0, holdFired:false, holdTimer:null, decayTimer:null };
@@ -670,6 +702,13 @@ let lastActivity = performance.now();
 window.addEventListener('pointerdown', () => { lastActivity = performance.now(); });
 window.addEventListener('keydown', () => { lastActivity = performance.now(); });
 
+// New-behavior state (mirrors firmware)
+let chargingSim = false;
+let batt = 91;
+let bootStart = 0, bootTimer = 0;
+let lastBattPoll = 0, lastBattTick = 0, lastBattWarn = -1e9;
+let sndPendingPreset = null;
+
 // Derpy state
 let derpyStart = 0;
 // Drift state
@@ -687,6 +726,101 @@ function updateBlink(dt){
     openness = Math.min(1, openness + dt/120);
     if (openness>=1) { blinkPhase=0; blinkTimer=0; nextBlink=2000+Math.random()*3000; }
   }
+}
+
+// Boot greeting: eyes ease open over 0.7 s (smoothstep) + wake coo + 4 s HAPPY
+function startBoot(){
+  clearTimeout(bootTimer);
+  bootStart = performance.now();
+  expr = 'HAPPY';
+  prevExpr = 'HAPPY';
+  transT = 1;
+  openness = 0;
+  blinkPhase = 0;
+  blinkTimer = 0;
+  nextBlink = 1500;
+  document.getElementById('status').textContent = 'HAPPY';
+  updateRemoteUI();
+  play('wake');
+  bootTimer = setTimeout(() => { if (expr === 'HAPPY') setExpr('IDLE'); }, 4000);
+}
+
+function updateBlinkBoot(dt){
+  if (bootStart && performance.now() - bootStart < 700) {
+    const u = (performance.now() - bootStart) / 700;
+    openness = u * u * (3 - 2 * u);
+    blinkPhase = 0;
+    blinkTimer = 0;
+    nextBlink = 1500;
+  } else {
+    updateBlink(dt);
+  }
+}
+
+// Demo buttons (mirror the firmware behaviors on demand)
+function toggleCharging(){
+  chargingSim = !chargingSim;
+  const b = document.getElementById('btnChg');
+  if (b) b.classList.toggle('active', chargingSim);
+  updateRemoteUI();
+}
+function demoLowBatt(){
+  batt = 12;                       // warning fires on the next 5 s poll…
+  lastBattWarn = -1e9;
+  updateRemoteUI();                // …unless charging (which suppresses it)
+}
+
+// ---------- Sound preset manager (mirrors the app) ----------
+const SND_PRESETS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop'];
+function buildSoundList(){
+  const list = document.getElementById('sndList');
+  if (!list) return;
+  SND_PRESETS.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'sndrow';
+    const nm = document.createElement('div');
+    nm.className = 'sndname'; nm.textContent = p;
+    const chip = document.createElement('span');
+    chip.className = 'chip'; chip.id = 'schip_' + p; chip.textContent = 'stock';
+    const up = document.createElement('button');
+    up.className = 'minibtn up'; up.textContent = 'Upload';
+    up.addEventListener('click', () => {
+      sndPendingPreset = p;
+      const inp = document.getElementById('sndFile');
+      if (inp) inp.click();
+    });
+    const st = document.createElement('button');
+    st.className = 'minibtn'; st.textContent = 'Stock'; st.style.display = 'none';
+    st.addEventListener('click', () => { delete customAudio[p]; refreshSndChips(); });
+    const pl = document.createElement('button');
+    pl.className = 'minibtn play'; pl.textContent = '▶';
+    pl.addEventListener('click', () => sendCmd('SOUND,' + p));
+    row.append(nm, chip, up, st, pl);
+    list.appendChild(row);
+  });
+
+  const inp = document.getElementById('sndFile');
+  if (inp) inp.addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f && sndPendingPreset) {
+      customAudio[sndPendingPreset] = new Audio(URL.createObjectURL(f));
+      play(sndPendingPreset);            // preview it right away
+      refreshSndChips();
+    }
+    e.target.value = '';
+  });
+}
+function refreshSndChips(){
+  SND_PRESETS.forEach(p => {
+    const c = document.getElementById('schip_' + p);
+    if (!c) return;
+    const has = !!customAudio[p];
+    c.textContent = has ? 'custom' : 'stock';
+    c.classList.toggle('custom', has);
+    const row = c.parentElement;
+    const stBtn = row && row.querySelector('.minibtn:not(.up):not(.play)');
+    if (stBtn) stBtn.style.display = has ? '' : 'none';
+  });
 }
 
 function derpyOpenness(isLeft, now){
@@ -885,6 +1019,33 @@ function drawEye(cx, cy, e, isLeft, t, op){
     ctx.fillRect(cx-80, cy-80+cur.bottomLid, 160, 160-cur.bottomLid);
   }
 
+  // Charging face (mirrors firmware): pulsing bolt + rising hollow bubbles.
+  // Only while charging and IDLE — sleeping stays asleep, interactions show normally.
+  if (chargingSim && e === 'IDLE') {
+    for (let i = 0; i < 3; i++) {
+      const ph = ((t * 0.45 + i * 0.37) % 1 + 1) % 1;
+      const bx = cx + Math.sin(t * 1.1 + i * 2.1) * 44;
+      const by = cy + 72 - ph * 118;
+      const br = 3 + i + ph * 3;
+      if (by - br > cy - 64) {
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(bx, by, Math.max(1, br - 2), 0, Math.PI*2); ctx.fill();
+      }
+    }
+    const pulse = 1 + 0.10 * Math.sin(t * 6);
+    const bolt = [[-2,-24],[9,-5],[3,-5],[7,9],[-5,-7],[1,-7],[-7,-18]];
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    for (let i = 0; i < bolt.length; i++) {
+      const x = cx + bolt[i][0] * pulse, y = cy + bolt[i][1] * pulse;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   // blink mask
   ctx.fillStyle = '#000';
   op = openness;
@@ -917,7 +1078,21 @@ function loop(now){
   const target = TARGETS[expr] || TARGETS.IDLE;
   lerpCur(target, dt);
 
-  updateBlink(dt);
+  updateBlinkBoot(dt);
+
+  // Battery sim: slow drain + firmware-matching low-batt warning (≤15%,
+  // suppressed while charging, ≤ once / 10 min)
+  if (now - lastBattTick > 60000) {
+    lastBattTick = now;
+    if (batt > 0) { batt--; updateRemoteUI(); }
+  }
+  if (now - lastBattPoll > 5000) {
+    lastBattPoll = now;
+    if (batt <= 15 && !chargingSim && expr !== 'SLEEP' && now - lastBattWarn > 600000) {
+      lastBattWarn = now;
+      setExpr('SLEEPY');   // default sound: grumble — the low-battery warning
+    }
+  }
 
   // Idle mirroring firmware: dim at 30 s, auto-sleep at 5 min
   const idleFor = now - lastActivity;
@@ -949,6 +1124,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+startBoot();
 </script>
 </body>
 </html>
