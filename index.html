@@ -54,6 +54,7 @@
   .sect { font-size:9.5px; font-weight:700; color:#8b8f9a; letter-spacing:.8px; text-transform:uppercase;
           margin:10px 0 6px; }
   .grid { display:grid; gap:6px; }
+  .grid.c1 { grid-template-columns:1fr; }
   .grid.c4 { grid-template-columns:repeat(4,1fr); }
   .grid.c3 { grid-template-columns:repeat(3,1fr); }
   .grid.c2 { grid-template-columns:repeat(2,1fr); }
@@ -90,6 +91,14 @@
   .wgrid .key { padding:8px 1px; font-size:8.5px; }
   .wscroll { overflow-y:auto; scrollbar-width:none; }
   .wscroll::-webkit-scrollbar { display:none; }
+
+  /* Trigger mapping rows */
+  .trigrow { display:flex; gap:6px; align-items:center; margin-bottom:6px;
+             background:rgba(255,255,255,.04); border-radius:10px; padding:7px 9px; }
+  .triglabel { flex:1; font-size:10px; color:#ccc; min-width:0; }
+  .tsel { background:#1c1e26; color:#eee; border:1px solid #3a3d4a; border-radius:8px;
+          padding:6px 4px; font-size:10px; flex:1; min-width:0; cursor:pointer; }
+  .tsel:focus { outline:1px solid #ff69b4; }
 </style>
 </head>
 <body>
@@ -140,14 +149,17 @@
           <div class="sect">Expressions</div>
           <div class="grid c4" id="phExprGrid"></div>
 
-          <div class="sect">Touch zones</div>
-          <div class="grid c3" id="phTouchGrid"></div>
+          <div class="sect">Touch</div>
+          <div class="grid c1" id="phTouchGrid"></div>
 
           <div class="sect">Food</div>
           <div class="grid c2" id="phFoodGrid"></div>
 
           <div class="sect">Sounds</div>
           <div class="grid c4" id="phSoundGrid"></div>
+
+          <div class="sect">Triggers → reaction</div>
+          <div id="trigList"></div>
         </div>
       </div>
     </div>
@@ -213,24 +225,32 @@ const audio = {};
 for (const n in EMBEDDED_AUDIO) { audio[n] = new Audio(EMBEDDED_AUDIO[n]); }
 function play(n){ try { if (audio[n]) { audio[n].currentTime=0; audio[n].play(); } } catch(e){} }
 
-function setExpr(e){
-  if (e === expr) return;
-  // trigger transition
-  prevExpr = expr;
-  expr = e;
-  transT = 0;
-  document.getElementById('status').textContent = e;
-  updateRemoteUI();
-  if (e==='HAPPY'||e==='LOVE') play('phee');
-  else if (e==='ANGRY'||e==='HATE') play('hiss');
-  else if (e==='SURPRISED') play('chirp');
-  else if (e==='SLEEPY'||e==='SQUINT') play('grumble');
-  else if (e==='SLEEP') play('sleep');
-  else if (e==='DERPY') play('chirp');
-  else if (e==='DRIFT') play('wake');
-  // reset derpy/drift timelines
-  if (e==='DERPY') { derpyStart = performance.now(); }
-  if (e==='DRIFT') { driftStart = performance.now(); }
+function defaultSound(e){
+  if (e==='HAPPY'||e==='LOVE') return 'phee';
+  if (e==='ANGRY'||e==='HATE') return 'hiss';
+  if (e==='SURPRISED') return 'chirp';
+  if (e==='SLEEPY'||e==='SQUINT') return 'grumble';
+  if (e==='SLEEP') return 'sleep';
+  if (e==='DERPY') return 'chirp';
+  if (e==='DRIFT') return 'wake';
+  return null;
+}
+
+// snd: explicit reaction sound ('' = silent, undefined = default for expression)
+function setExpr(e, snd){
+  const changed = e !== expr;
+  if (!changed && snd === undefined) return;
+  if (changed) {
+    prevExpr = expr;
+    expr = e;
+    transT = 0;
+    document.getElementById('status').textContent = e;
+    updateRemoteUI();
+    if (e==='DERPY') { derpyStart = performance.now(); }
+    if (e==='DRIFT') { driftStart = performance.now(); }
+  }
+  const s = (snd === undefined) ? defaultSound(e) : (snd || null);
+  if (s) play(s);
 }
 
 function cycle(){
@@ -245,6 +265,44 @@ function cycle(){
 // Implements the exact text protocol the ESP32-S3 accepts over BLE,
 // so trying a key here matches what the real iPhone/Watch app sends.
 const gaze = { until: 0, x: 0, y: 0 };
+const pupilL = { x: 0, y: 0 }, pupilR = { x: 0, y: 0 };
+let frameDt = 16;
+
+// ---------- Configurable trigger reactions ----------
+// Each physical trigger maps to any expression + sound, independently.
+// Persisted in localStorage here; the firmware keeps the same mapping in
+// NVS and accepts it over BLE via CFG,<trigger>,<EXPR>,<sound>.
+const TRIGGER_DEFS = [
+  ['head', 'Head touch'],
+  ['love', 'Ink · north pole'],
+  ['hate', 'Rival · south pole']
+];
+const DEFAULT_MAP = {
+  head: { emo: 'HAPPY', snd: 'phee' },
+  love: { emo: 'LOVE',  snd: 'phee' },
+  hate: { emo: 'HATE',  snd: 'hiss' }
+};
+const SOUND_OPTIONS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop',''];
+
+let reactMap = JSON.parse(JSON.stringify(DEFAULT_MAP));
+try {
+  const saved = JSON.parse(localStorage.getItem('bbTriggerMap') || 'null');
+  if (saved) reactMap = Object.assign(reactMap, saved);
+} catch(e){}
+// sanitize anything invalid
+Object.keys(DEFAULT_MAP).forEach(k => {
+  const r = reactMap[k];
+  if (!EXPRS.includes(r.emo)) r.emo = DEFAULT_MAP[k].emo;
+  if (!SOUND_OPTIONS.includes(r.snd)) r.snd = DEFAULT_MAP[k].snd;
+});
+function saveMap(){ try { localStorage.setItem('bbTriggerMap', JSON.stringify(reactMap)); } catch(e){} }
+
+function fireTrigger(name){
+  const r = reactMap[name];
+  if (!r) return;
+  if (expr === 'SLEEP' && r.emo !== 'SLEEP') { setExpr('IDLE'); play('wake'); }
+  setExpr(r.emo, r.snd);
+}
 const clampf = (v, lo, hi) => v < lo ? lo : (v > hi ? hi : v);
 const VALID_SOUNDS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop'];
 
@@ -270,13 +328,13 @@ function sendCmd(text) {
     gaze.y = clampf(y - 80, -34, 34);
     gaze.until = performance.now() + 2500;   // matches REMOTE_GAZE_MS in firmware
   } else if (op === 'TOUCH') {
+    if (arg === 'head') { fireTrigger('head'); return; }
     wakeIfNeeded();
-    const map = { head:'HAPPY', earL:'SURPRISED', earR:'SURPRISED', nose:'SQUINT',
+    const map = { earL:'SURPRISED', earR:'SURPRISED', nose:'SQUINT',
                   nap:'SLEEPY', grab:'ANGRY', derpy:'DERPY', drift:'DRIFT' };
     if (map[arg]) setExpr(map[arg]);
   } else if (op === 'FOOD') {
-    wakeIfNeeded();
-    setExpr(arg === 'love' ? 'LOVE' : 'HATE');
+    if (arg === 'love' || arg === 'hate') fireTrigger(arg);
   } else if (op === 'SOUND') {
     if (VALID_SOUNDS.includes(arg)) {
       if (expr === 'SLEEP' && arg !== 'sleep' && arg !== 'sleeploop') setExpr('IDLE');
@@ -312,8 +370,7 @@ const EXPR_KEYS = [
   ['SLEEP','#7d5fff'], ['DERPY','#20c9b4'], ['DRIFT','#20c9b4']
 ];
 const TOUCH_KEYS = [
-  ['Head','head','#34c759'], ['Left ear','earL','#32ade6'], ['Right ear','earR','#32ade6'],
-  ['Nose','nose','#e6c200'], ['Grab!','grab','#ff453a'], ['Nap','nap','#7d5fff']
+  ['Head', 'head', '#34c759']   // the only physical touch sensor
 ];
 const FOOD_KEYS = [
   ['Conjuring Ink ♥','love','#ff69b4'], ['Rival ✕','hate','#ff453a']
@@ -325,6 +382,36 @@ fillGrid('phTouchGrid', TOUCH_KEYS.map(([l,z,c]) => [l, c, 'TOUCH,' + z]));
 fillGrid('phFoodGrid',  FOOD_KEYS.map(([l,k,c]) => [l, c, 'FOOD,' + k]));
 fillGrid('phSoundGrid', SOUND_KEYS.map(s => [s[0].toUpperCase() + s.slice(1), '#9b59d0', 'SOUND,' + s]));
 
+// Trigger mapping UI (persisted)
+function buildTriggers(){
+  const list = document.getElementById('trigList');
+  if (!list) return;
+  TRIGGER_DEFS.forEach(([key, label]) => {
+    const row = document.createElement('div');
+    row.className = 'trigrow';
+
+    const lab = document.createElement('div');
+    lab.className = 'triglabel';
+    lab.textContent = label;
+
+    const se = document.createElement('select');
+    se.className = 'tsel';
+    EXPRS.forEach(o => se.add(new Option(o, o)));
+    se.value = reactMap[key].emo;
+    se.addEventListener('change', () => { reactMap[key].emo = se.value; saveMap(); });
+
+    const ss = document.createElement('select');
+    ss.className = 'tsel';
+    SOUND_OPTIONS.forEach(o => ss.add(new Option(o === '' ? 'silent' : o, o)));
+    ss.value = reactMap[key].snd;
+    ss.addEventListener('change', () => { reactMap[key].snd = ss.value; saveMap(); });
+
+    row.append(lab, se, ss);
+    list.appendChild(row);
+  });
+}
+buildTriggers();
+
 // Apple Watch: Faces + Fun pages
 fillGrid('wtFaces', [
   ['Idle','#4d7cff','EXPR,IDLE'],   ['Happy','#ff69b4','EXPR,HAPPY'],
@@ -333,8 +420,7 @@ fillGrid('wtFaces', [
   ['Derpy','#20c9b4','EXPR,DERPY'], ['Drift','#20c9b4','EXPR,DRIFT']
 ]);
 fillGrid('wtFun', [
-  ['Head ♥','#34c759','TOUCH,head'], ['Ears','#32ade6','TOUCH,earL'],
-  ['Nose','#e6c200','TOUCH,nose'],   ['Nap','#7d5fff','TOUCH,nap'],
+  ['Head ♥','#34c759','TOUCH,head'], ['Nap','#7d5fff','TOUCH,nap'],
   ['Ink ♥','#ff69b4','FOOD,love'],   ['Rival ✕','#ff453a','FOOD,hate']
 ]);
 
@@ -543,6 +629,15 @@ function drawEye(cx, cy, e, isLeft, t, op){
     py = gaze.y;
   }
 
+  // Smooth all pupil motion (same feel as the firmware's exp smoothing,
+  // ~35 ms time constant ≈ 0.28 lerp @120 Hz) — kills 25 Hz gaze stepping
+  const st = isLeft ? pupilL : pupilR;
+  const k = 1 - Math.exp(-frameDt / 35);
+  st.x += (px - st.x) * k;
+  st.y += (py - st.y) * k;
+  px = st.x;
+  py = st.y;
+
   // smooth lerp pupil toward target
   // (use cur.pr already; px/py applied directly for snappy feel)
 
@@ -641,6 +736,7 @@ function drawEye(cx, cy, e, isLeft, t, op){
 let last = performance.now();
 function loop(now){
   const dt = now - last; last = now;
+  frameDt = Math.min(dt, 100);
 
   // transition progress
   transT = Math.min(1, transT + dt/TRANS_DUR);
