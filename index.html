@@ -680,19 +680,20 @@ function updateBlink(dt){
 
 function derpyOpenness(isLeft, now){
   const elapsed = (now - derpyStart) / 1000;
-  const cycle = 2.0;
-  const offset = isLeft ? 0 : 0.7;
+  // Reeeeeally slow woozy blink: 7 s per eye, one eye lags the other by 3.2 s
+  const cycle = 7.0;
+  const offset = isLeft ? 0 : 3.2;
   const t = ((elapsed - offset) % cycle + cycle) % cycle;
-  if (t < 0.2) {
-    const u = t / 0.2;
-    return 1.0 - u*u;
-  } else if (t < 0.5) {
+  if (t < 1.6) {                       // slow close (1.6 s, smoothstep)
+    const u = t / 1.6;
+    return 1.0 - u*u*(3-2*u);
+  } else if (t < 2.8) {                // hold closed (1.2 s)
     return 0.0;
-  } else if (t < 0.9) {
-    const u = (t - 0.5) / 0.4;
+  } else if (t < 4.6) {                // slow open (1.8 s, smoothstep)
+    const u = (t - 2.8) / 1.8;
     return u*u*(3-2*u);
   }
-  return 1.0;
+  return 1.0;                          // open for the rest of the cycle
 }
 
 function driftOffset(isLeft, now){
