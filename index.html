@@ -72,7 +72,7 @@
   .itab { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
           font-size:9px; color:#8b7645; padding:5px 0; border-radius:14px; cursor:pointer;
           font-family:inherit; background:none !important; border:none !important;
-          box-shadow:none !important; transform:none !important;
+          box-shadow:none !important; transform:none !important; white-space:nowrap;
           transition:color .15s, background .15s; }
   .itab:hover { background:rgba(107,90,62,.08) !important; transform:none !important; }
   .itab:active { transform:none !important; }
@@ -265,6 +265,24 @@
            color:#2e2418; margin-bottom:3px; }
   .jline:first-child { font-weight:bold; font-style:italic; margin-bottom:6px; }
   .jline:not(:first-child)::before { content:'✦ '; color:#8b7645; }
+
+  /* Two-unit duo view (conversation partners) */
+  .duo { display:flex; gap:34px; flex-wrap:wrap; justify-content:center; align-items:flex-start; }
+  .unitlabel { text-align:center; font-size:14px; font-style:italic; color:#6b5a3e; margin-bottom:2px; }
+
+  /* Firmware update card (mirrors the app's Firmware update section) */
+  .fwbox { background:#fdf9ee; border:none; border-radius:16px; padding:12px 14px;
+           box-shadow:0 2px 8px rgba(70,55,30,.10); }
+  .fwrow { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .fwgo { background:#34c759 !important; color:#063 !important; border-color:rgba(44,168,79,.6) !important; }
+  .fwstatus { font-family:Georgia, serif; font-style:italic; font-size:11.5px; color:#6b5a3e;
+              margin-bottom:2px; min-height:15px; }
+  .fwbar { display:none; height:7px; border-radius:99px; background:rgba(107,90,62,.18);
+           overflow:hidden; margin-bottom:6px; }
+  .fwbar.on { display:block; }
+  .fwfill { height:100%; width:0%; border-radius:99px; background:#5b4b8a;
+            transition:width .2s ease; }
+  .fwnote { font-size:9.5px; color:#8b7645; font-style:italic; }
 </style>
 </head>
 <body>
@@ -295,24 +313,51 @@
   <div class="pagesub">✧ live preview of the animatronic ✧</div>
   <div class="rule"><i></i><span>✦</span><i></i></div>
 </div>
-<div class="stage">
-  <canvas id="c" width="320" height="160"></canvas>
-  <svg class="corner c-tl" viewBox="0 0 44 44" aria-hidden="true">
-    <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
-  </svg>
-  <svg class="corner c-tr" viewBox="0 0 44 44" aria-hidden="true">
-    <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
-  </svg>
-  <svg class="corner c-bl" viewBox="0 0 44 44" aria-hidden="true">
-    <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
-  </svg>
-  <svg class="corner c-br" viewBox="0 0 44 44" aria-hidden="true">
-    <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
-  </svg>
+<div class="duo">
+  <div>
+    <div class="unitlabel">Brushbuddy</div>
+    <div class="stage">
+      <canvas id="c" width="320" height="160"></canvas>
+      <svg class="corner c-tl" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+      <svg class="corner c-tr" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+      <svg class="corner c-bl" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+      <svg class="corner c-br" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+    </div>
+  </div>
+  <div>
+    <div class="unitlabel">Brushbuddy №2</div>
+    <div class="stage">
+      <canvas id="c2" width="320" height="160"></canvas>
+      <svg class="corner c-tl" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+      <svg class="corner c-tr" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+      <svg class="corner c-bl" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+      <svg class="corner c-br" viewBox="0 0 44 44" aria-hidden="true">
+        <path d="M6 40 C6 20 12 9 27 5" fill="none" stroke="#8b7645" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M31 2 l1.4 3 3.2.4 -2.4 2.2 .6 3.2 -2.8-1.6 -2.8 1.6 .6-3.2 -2.4-2.2 3.2-.4 z" fill="#c9a227"/>
+      </svg>
+    </div>
+  </div>
 </div>
 <div class="controls">
   <button onclick="setExpr('IDLE')">IDLE</button>
@@ -355,7 +400,7 @@
             <span class="dot"></span>
             <div class="btxt">
               <div class="b1">Brushbuddy</div>
-              <div class="b2"><span id="phExpr">IDLE</span> · <span id="phBatt">91</span>%<span id="phChg"></span></div>
+              <div class="b2"><span id="phExpr">IDLE</span> · <span id="phBatt">91</span>%<span id="phChg"></span> · <span id="phVer">v1.1</span></div>
             </div>
             <button style="font-size:9px;padding:4px 8px" onclick="this.textContent='Scan'">Disconnect</button>
           </div>
@@ -419,6 +464,18 @@
 
           <div class="sect">Brushbuddy's Journal ✧</div>
           <div id="journalCard" class="journalcard"></div>
+
+          <div class="sect">Firmware update</div>
+          <div class="fwbox">
+            <div class="fwrow">
+              <button id="fwCheck">Check for updates</button>
+              <button id="fwInstall" class="fwgo" style="display:none">Install v1.2 ✧</button>
+              <button id="fwReboot" class="fwgo" style="display:none">Reboot &amp; update ✧</button>
+            </div>
+            <div class="fwstatus" id="fwStatus">Running v1.1</div>
+            <div class="fwbar" id="fwBar"><div class="fwfill" id="fwFill"></div></div>
+            <div class="fwnote">Demo of the app flow — the real app fetches an encrypted container from the public releases repo.</div>
+          </div>
           </div>
         </div>
         <div class="itabbar">
@@ -838,11 +895,9 @@ function setPeer(on){
   if (sw) sw.addEventListener('click', () => sendCmd('PEER,' + (peerOn ? 'off' : 'on')));
   const btn = document.getElementById('peerBtn');
   if (btn) btn.addEventListener('click', () => {
-    // firmware greeting: wake, then HAPPY + chirp
+    // two Brushbuddies notice each other → positive back-and-forth conversation
     if (!peerOn) return;
-    wakeIfNeeded();
-    setExpr('HAPPY', 'chirp', 3500);   // firmware peer greeting hold
-    bumpJ('greetz');
+    startSimConversation();
   });
 })();
 
@@ -1104,15 +1159,15 @@ function refreshSndChips(){
 function journalLines(){
   const j = journal;
   const total = j.pets + j.feeds + j.naps + j.greetz + j.dreams;
-  const L = ['"吾輩\'s observations, vol. I."'];
+  const L = ['"Brushbuddy\'s observations, vol. I."'];
   if (total === 0) {
-    L.push('Day one. Nothing has happened yet.吾輩 waits.');
+    L.push('Day one. Nothing has happened yet. Brushbuddy waits.');
     return L;
   }
-  if (j.pets)   L.push(`Patted ${j.pets}× today.吾輩 remained gracious.`);
+  if (j.pets)   L.push(`Patted ${j.pets}× today. Brushbuddy remained gracious.`);
   if (j.feeds)  L.push(`Snacks presented ${j.feeds}×. Acceptable.`);
   if (j.naps)   L.push(`${j.naps} naps taken. Each one dignified.`);
-  if (j.greetz) L.push(`${j.greetz} encounter(s) with the other one.吾輩 hissed (politely).`);
+  if (j.greetz) L.push(`${j.greetz} chat(s) with the other Brushbuddy. It went splendidly.`);
   if (j.dreams) L.push(`${j.dreams} dreams. All of them about ink.`);
   return L;
 }
@@ -1447,6 +1502,166 @@ function drawEye(cx, cy, e, isLeft, t, op){
   }
 }
 
+// ---------- Brushbuddy №2 — the neighbour (conversation partner) ----------
+const ctx2 = document.getElementById('c2').getContext('2d');
+const u2 = {
+  expr: 'IDLE', exprUntil: 0, openness: 1, blinkPhase: 0, blinkTimer: 0,
+  nextBlink: 3000,
+  glance: { lx: 0, ly: 0, last: 0, next: 1800 },
+  pr: 34, happy: 0, gx: 0, gy: 0        // smoothed gaze (pair-synced like the firmware)
+};
+function u2React(exprName, snd, holdMs) {
+  u2.expr = exprName;
+  u2.exprUntil = performance.now() + (holdMs || 2500);
+  if (snd) play(snd);
+}
+function updateU2(dt, now) {
+  if (u2.exprUntil && now > u2.exprUntil && u2.expr !== 'IDLE') u2.expr = 'IDLE';
+  let prT = 34, hp = 0;
+  if (u2.expr === 'SURPRISED') prT = 20;
+  else if (u2.expr === 'HAPPY') { prT = 36; hp = 1; }
+  else if (u2.expr === 'LOOK_L' || u2.expr === 'LOOK_R') prT = 32;
+  u2.pr += (prT - u2.pr) * 0.18;
+  u2.happy += (hp - u2.happy) * 0.18;
+  // its own blink cadence (2.8–5.2 s like the firmware)
+  u2.blinkTimer += dt;
+  if (u2.blinkPhase === 0 && u2.blinkTimer > u2.nextBlink) { u2.blinkPhase = 1; u2.blinkTimer = 0; }
+  else if (u2.blinkPhase === 1) { u2.openness = Math.max(0, u2.openness - dt / 55); if (u2.openness <= 0) u2.blinkPhase = 2; }
+  else if (u2.blinkPhase === 2) { u2.openness = Math.min(1, u2.openness + dt / 120); if (u2.openness >= 1) { u2.blinkPhase = 0; u2.blinkTimer = 0; u2.nextBlink = 2800 + Math.random() * 2400; } }
+  // idle saccades (its own pair — both its eyes move together)
+  if (u2.expr === 'IDLE' && now - u2.glance.last > u2.glance.next) {
+    u2.glance.lx = Math.floor(Math.random() * 45) - 22;
+    u2.glance.ly = Math.floor(Math.random() * 30) - 14;
+    u2.glance.last = now;
+    u2.glance.next = 1500 + Math.random() * 2000;
+  }
+}
+function drawUnit2(now) {
+  ctx2.fillStyle = '#12141a';
+  ctx2.fillRect(0, 0, 320, 160);
+  const e = u2.expr;
+  let px = 0, py = 0;
+  if (e === 'LOOK_L') { px = -24; py = -2; }
+  else if (e === 'LOOK_R') { px = 24; py = -2; }
+  else if (e === 'SURPRISED') { px = Math.random() * 6 - 3; py = Math.random() * 6 - 3; }
+  else if (e === 'IDLE') { px = u2.glance.lx; py = u2.glance.ly; }
+  // smoothing — same 35 ms time constant as unit 1
+  const k = 1 - Math.exp(-frameDt / 35);
+  u2.gx += (px - u2.gx) * k;
+  u2.gy += (py - u2.gy) * k;
+  const sx = u2.gx, sy = u2.gy, pr = Math.round(u2.pr);
+
+  for (const cxs of [80, 240]) {
+    ctx2.fillStyle = '#2d323e';
+    ctx2.beginPath(); ctx2.arc(cxs, 80, 80, 0, Math.PI * 2); ctx2.fill();
+    ctx2.fillStyle = '#000';
+    ctx2.beginPath(); ctx2.arc(cxs, 80, 78, 0, Math.PI * 2); ctx2.fill();
+    const scleraR = e === 'SURPRISED' ? 74 : 70;
+    ctx2.fillStyle = '#fff';
+    ctx2.beginPath(); ctx2.arc(cxs, 80, scleraR, 0, Math.PI * 2); ctx2.fill();
+    ctx2.fillStyle = '#212021';
+    ctx2.beginPath(); ctx2.arc(cxs + sx, 80 + sy, pr + 1, 0, Math.PI * 2); ctx2.fill();
+    ctx2.fillStyle = '#000';
+    ctx2.beginPath(); ctx2.arc(cxs + sx, 80 + sy, pr, 0, Math.PI * 2); ctx2.fill();
+    const hx = cxs + sx * 0.85 - pr / 3, hy = 80 + sy * 0.85 - pr / 3;
+    ctx2.fillStyle = '#fff';
+    ctx2.beginPath(); ctx2.arc(hx, hy, e === 'SURPRISED' ? 4 : 6, 0, Math.PI * 2); ctx2.fill();
+    if (e === 'HAPPY') {                 // happy cheek arc (same ellipse as unit 1)
+      ctx2.fillStyle = '#000';
+      ctx2.beginPath(); ctx2.ellipse(cxs, 150, 88 * u2.happy, 52 * u2.happy, 0, 0, Math.PI * 2); ctx2.fill();
+    }
+    if (u2.openness < 0.99) {            // blink mask
+      const lid = (1 - u2.openness) * 80;
+      ctx2.fillStyle = '#000';
+      ctx2.fillRect(cxs - 80, 80 - 80, 160, lid);
+      ctx2.fillRect(cxs - 80, 160 - lid, 160, lid);
+    }
+  }
+}
+
+// ---------- Peer conversation (positive-only script, mirrors CONV_SCRIPT) ----------
+let simConvRunning = false;
+function startSimConversation() {
+  if (simConvRunning) return;
+  simConvRunning = true;
+  bumpJ('greetz');
+  wakeIfNeeded();
+  const at = (ms, fn) => setTimeout(fn, ms);
+  at(0,    () => setExpr('SURPRISED', 'chirp', 2500));   // conductor: "oh! hello!"
+  at(1600, () => u2React('HAPPY', 'phee'));              // neighbour answers
+  at(3400, () => setExpr('LOOK_L', 'chirp', 2500));      // glancing over, chatting
+  at(5200, () => u2React('LOOK_R', 'phee'));
+  at(7000, () => {                                       // shared happy nod
+    setExpr('HAPPY', 'chirp', 2500);
+    u2React('HAPPY', 'chirp');
+  });
+  at(9800, () => { simConvRunning = false; });
+}
+
+// ---------- Firmware update flow (mirrors the app's section; demo states) ----------
+let fwState = 'idle', fwPct = 0, simVersion = 'v1.1';
+function fwStatusText() {
+  const el = document.getElementById('fwStatus');
+  if (!el) return;
+  const map = {
+    idle: `Running ${simVersion}`,
+    checking: 'Checking the releases repo…',
+    uptodate: `Up to date ✧ (running ${simVersion})`,
+    available: 'v1.2 is available ✧',
+    receiving: `Receiving update… ${fwPct}%`,
+    done: 'Image verified ✓ — ready to reboot',
+    rebooting: 'Rebooting into the new firmware…'
+  };
+  el.textContent = map[fwState] || '';
+  const ver = document.getElementById('phVer'); if (ver) ver.textContent = simVersion;
+  const chk = document.getElementById('fwCheck');
+  const inst = document.getElementById('fwInstall');
+  const reb = document.getElementById('fwReboot');
+  const bar = document.getElementById('fwBar');
+  const fill = document.getElementById('fwFill');
+  if (chk) chk.disabled = (fwState !== 'idle');
+  if (inst) inst.style.display = (fwState === 'available') ? '' : 'none';
+  if (reb) reb.style.display = (fwState === 'done') ? '' : 'none';
+  if (bar) bar.classList.toggle('on', fwState === 'receiving');
+  if (fill) fill.style.width = fwPct + '%';
+}
+function fwCheck() {
+  if (fwState !== 'idle') return;
+  fwState = 'checking'; fwStatusText();
+  setTimeout(() => {
+    fwState = (simVersion === 'v1.2') ? 'uptodate' : 'available';  // repo has v1.2
+    fwStatusText();
+  }, 800);
+}
+function fwInstall() {
+  if (fwState !== 'available') return;
+  fwState = 'receiving'; fwPct = 0; fwStatusText();
+  const iv = setInterval(() => {
+    fwPct = Math.min(100, fwPct + 4 + Math.random() * 8);
+    if (fwPct >= 100) { clearInterval(iv); fwState = 'done'; }
+    fwStatusText();
+  }, 220);
+}
+function fwReboot() {
+  if (fwState !== 'done') return;
+  fwState = 'rebooting'; fwStatusText();
+  setTimeout(() => {
+    simVersion = 'v1.2';
+    fwState = 'idle';
+    fwStatusText();
+    startBoot();                     // reboot = boot greeting again
+  }, 1300);
+}
+(function wireFw() {
+  const c = document.getElementById('fwCheck');
+  const i = document.getElementById('fwInstall');
+  const r = document.getElementById('fwReboot');
+  if (c) c.addEventListener('click', fwCheck);
+  if (i) i.addEventListener('click', fwInstall);
+  if (r) r.addEventListener('click', fwReboot);
+  fwStatusText();
+})();
+
 let last = performance.now();
 function loop(now){
   const dt = now - last; last = now;
@@ -1527,6 +1742,11 @@ function loop(now){
   const jy = purring ? Math.cos(t * 2.6 * 2 * Math.PI * 2) * 0.7 : 0;
   drawEye(80+jx,80+jy,expr,true,t, (expr==='SLEEP')?0:openness);
   drawEye(240+jx,80+jy,expr,false,t, (expr==='SLEEP')?0:openness);
+
+  // neighbour Brushbuddy №2 (conversation partner)
+  updateU2(dt, now);
+  drawUnit2(now);
+
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
