@@ -4,18 +4,27 @@
 <meta charset="utf-8">
 <title>Brushbuddy Eye Simulator</title>
 <style>
+  * { box-sizing:border-box; }
   body { background:#f6efd9; color:#2b2118; font-family:Georgia, 'Times New Roman', serif;
-         display:flex; flex-direction:column; align-items:center; margin:0; padding:20px; }
-  canvas { border:2px solid #6b5a3e; border-radius:12px;
-           box-shadow: 0 6px 18px rgba(70,55,30,.35); }
-  .controls { margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:640px; }
-  button { padding:8px 14px; background:#fdf9ee; color:#2b2118; border:1px solid #6b5a3e;
-           border-radius:6px; cursor:pointer; font-family:inherit; font-size:13px; }
-  button:hover { background:#f0e6cc; }
-  #status { margin-top:10px; font-size:14px; color:#6b5a3e; font-style:italic; }
+         display:flex; flex-direction:column; align-items:center; margin:0; padding:30px 20px;
+         -webkit-font-smoothing:antialiased; }
+  .pagehead { text-align:center; margin-bottom:6px; }
+  .pagehead h2 { font-size:36px; font-weight:600; margin:0; letter-spacing:.5px; }
+  .pagesub { font-size:13px; color:#8b7645; font-style:italic; margin-top:4px; }
+  .pagehead::after { content:''; display:block; width:170px; height:1px; margin:14px auto 0;
+                     background:linear-gradient(90deg, transparent, #6b5a3e, transparent); }
+  canvas { border:none; border-radius:18px; box-shadow:0 12px 34px rgba(70,55,30,.30); }
+  .controls { margin-top:18px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-width:680px; }
+  button { padding:9px 18px; background:#fdf9ee; color:#2b2118; border:1px solid rgba(107,90,62,.35);
+           border-radius:999px; cursor:pointer; font-family:inherit; font-size:13px;
+           box-shadow:0 1px 3px rgba(70,55,30,.12);
+           transition:transform .12s ease, box-shadow .12s ease, background .12s ease; }
+  button:hover { background:#fffdf6; transform:translateY(-1px); box-shadow:0 5px 14px rgba(70,55,30,.18); }
+  button:active { transform:translateY(0) scale(.96); }
+  #status { margin-top:14px; font-size:20px; color:#6b5a3e; font-style:italic; font-weight:600; }
 
   /* ---------- Remote devices ---------- */
-  #remotes { display:flex; gap:36px; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-top:26px; }
+  #remotes { display:flex; gap:36px; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-top:30px; }
   .rlabel { text-align:center; font-size:14px; color:#6b5a3e; margin-bottom:8px; letter-spacing:.4px;
             font-style:italic; }
   .rnote { text-align:center; font-size:11px; color:#8b7645; max-width:300px; margin-top:8px; line-height:1.5; }
@@ -34,43 +43,51 @@
             font-style:italic; }
 
   .banner { display:flex; align-items:center; gap:8px; background:#fdf9ee;
-            border:1px solid #d9c9a3; border-radius:12px; padding:9px 11px; margin-bottom:12px; }
-  .banner .dot { width:8px; height:8px; border-radius:50%; background:#3ddc6e; flex:none; }
+            border:none; border-radius:16px; padding:11px 14px; margin-bottom:14px;
+            box-shadow:0 2px 10px rgba(70,55,30,.12); }
+  .banner .dot { width:9px; height:9px; border-radius:50%; background:#3ddc6e; flex:none;
+                 animation:pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
   .banner .btxt { flex:1; min-width:0; }
-  .banner .b1 { font-size:11.5px; font-weight:600; color:#2b2118; }
-  .banner .b2 { font-size:10px; color:#8b7645; }
+  .banner .b1 { font-size:12px; font-weight:600; color:#2b2118; }
+  .banner .b2 { font-size:10.5px; color:#8b7645; }
 
-  .pad { background:#fdf9ee; border:1px solid #d9c9a3; border-radius:14px; padding:12px; margin-bottom:12px;
-         -webkit-user-select:none; user-select:none; touch-action:none; }
-  .padhead { font-size:9.5px; font-weight:700; color:#8b7645; letter-spacing:.8px; text-transform:uppercase; margin-bottom:8px; }
+  .pad { background:#fdf9ee; border:none; border-radius:22px; padding:16px; margin-bottom:14px;
+         -webkit-user-select:none; user-select:none; touch-action:none;
+         box-shadow:0 3px 14px rgba(70,55,30,.13); }
+  .padhead { font-size:11.5px; font-weight:700; color:#8b7645; letter-spacing:.2px; margin-bottom:10px; }
   .padarea { position:relative; width:100%; aspect-ratio:1; border-radius:50%; cursor:grab;
-             background: radial-gradient(circle at 50% 45%, rgba(107,90,62,.14), rgba(107,90,62,.05) 70%);
-             border:1.5px solid rgba(107,90,62,.5); touch-action:none; }
+             background: radial-gradient(circle at 50% 40%, #fffdf6, #e9dfc8 75%);
+             border:2px solid rgba(107,90,62,.45); touch-action:none;
+             box-shadow: inset 0 4px 14px rgba(70,55,30,.16); transition: box-shadow .2s; }
   .padarea:active { cursor:grabbing; }
-  .padarea::before, .padarea::after { content:''; position:absolute; background:rgba(107,90,62,.3); }
-  .padarea::before { left:50%; top:12%; bottom:12%; width:1px; }
-  .padarea::after  { top:50%; left:12%; right:12%; height:1px; }
-  .puck { position:absolute; width:26px; height:26px; border-radius:50%; background:#3a2f22;
+  .padarea::before, .padarea::after { content:''; position:absolute; background:rgba(107,90,62,.25); }
+  .padarea::before { left:50%; top:14%; bottom:14%; width:1px; }
+  .padarea::after  { top:50%; left:14%; right:14%; height:1px; }
+  .puck { position:absolute; width:30px; height:30px; border-radius:50%; background:#3a2f22;
           transform:translate(-50%,-50%);
           transition: left .45s cubic-bezier(.22,1,.36,1), top .45s cubic-bezier(.22,1,.36,1),
                       box-shadow .2s, width .15s, height .15s;
-          box-shadow:0 0 0 rgba(255,105,180,0); pointer-events:none; }
-  .puck.drag { background:#ff69b4; box-shadow:0 0 16px rgba(255,105,180,.8);
+          box-shadow:0 0 0 rgba(255,105,180,0), 0 4px 10px rgba(70,55,30,.35); pointer-events:none; }
+  .puck.drag { background:#ff69b4; box-shadow:0 0 18px rgba(255,105,180,.9), 0 4px 10px rgba(70,55,30,.3);
                transition: box-shadow .2s, width .15s, height .15s; }
-  .padnote { font-size:9.5px; color:#8b7645; text-align:center; margin-top:7px; font-style:italic; }
+  .padnote { font-size:10px; color:#8b7645; text-align:center; margin-top:8px; font-style:italic; }
 
-  .sect { font-size:10px; font-weight:700; color:#8b7645; letter-spacing:.8px; text-transform:uppercase;
-          margin:10px 0 6px; font-style:italic; }
-  .grid { display:grid; gap:6px; }
+  .sect { font-size:12px; font-weight:700; color:#8b7645; letter-spacing:.2px;
+          margin:18px 0 9px; }
+  .grid { display:grid; gap:8px; }
   .grid.c1 { grid-template-columns:1fr; }
   .grid.c4 { grid-template-columns:repeat(4,1fr); }
   .grid.c3 { grid-template-columns:repeat(3,1fr); }
   .grid.c2 { grid-template-columns:repeat(2,1fr); }
-  .key { padding:8px 2px; border-radius:10px; font-size:9.5px; font-weight:600; color:#2b2118;
-         border:1px solid; cursor:pointer; text-align:center; -webkit-user-select:none; user-select:none;
-         font-family:inherit; }
-  .key:active { transform:scale(.94); }
-  .ipad .key { font-size:10px; padding:9px 2px; }
+  .key { padding:11px 4px; border-radius:16px; font-size:10.5px; font-weight:600; color:#2b2118;
+         border:1.5px solid; cursor:pointer; text-align:center; -webkit-user-select:none; user-select:none;
+         font-family:inherit; line-height:1.3; white-space:nowrap;
+         box-shadow:0 1px 3px rgba(70,55,30,.10);
+         transition:transform .12s ease, box-shadow .12s ease; }
+  .key:hover { transform:translateY(-1px); box-shadow:0 5px 12px rgba(70,55,30,.16); }
+  .key:active { transform:scale(.95); }
+  .ipad .key { font-size:11px; padding:12px 4px; }
 
   /* Apple Watch frame */
   .watch { position:relative; padding-top:34px; }
@@ -84,79 +101,104 @@
   .sidebtn { position:absolute; right:-7px; top:124px; width:7px; height:44px; background:#4a4d58; border-radius:4px; }
   .wscreen { width:100%; height:100%; background:#f4ecd7; border-radius:44px; overflow:hidden;
              position:relative; display:flex; flex-direction:column; color:#2b2118; }
-  .wstatus { display:flex; justify-content:space-between; font-size:9.5px; color:#6b5a3e; padding:12px 18px 2px; }
-  .wbody { flex:1; display:flex; flex-direction:column; padding:2px 10px 8px; min-height:0; }
-  .wtabbar { display:flex; gap:4px; padding:4px 8px 9px; }
-  .wtab { flex:1; text-align:center; font-size:8.5px; padding:5px 0; border-radius:9px;
-          background:rgba(107,90,62,.14); color:#6b5a3e; cursor:pointer; font-family:inherit; }
-  .wtab.on { background:#ff69b4; color:#1a1a1a; font-weight:700; }
+  .wstatus { display:flex; justify-content:space-between; font-size:10px; color:#6b5a3e;
+             padding:12px 18px 2px; font-weight:600; }
+  .wbody { flex:1; display:flex; flex-direction:column; padding:4px 12px 4px; min-height:0; }
+  .wtabbar { display:flex; gap:3px; padding:3px; margin:0 10px 10px;
+             background:rgba(107,90,62,.14); border-radius:999px; }
+  .wtab { flex:1; text-align:center; font-size:9.5px; padding:7px 0; border-radius:999px;
+          background:transparent; color:#6b5a3e; cursor:pointer; font-family:inherit;
+          font-weight:600; transition:background .18s, color .18s, box-shadow .18s; }
+  .wtab.on { background:#fffdf6; color:#d63384;
+             box-shadow:0 2px 6px rgba(70,55,30,.30); }
   .wpage { flex:1; display:none; flex-direction:column; min-height:0; }
   .wpage.on { display:flex; }
-  .wexpr { font-size:11px; font-weight:700; color:#2b2118; text-align:center; margin:2px 0 4px;
-           font-style:italic; }
-  .wpad { position:relative; flex:1; border-radius:50%; touch-action:none; cursor:grab;
-          background: radial-gradient(circle, rgba(107,90,62,.16), rgba(107,90,62,.04) 75%);
-          border:1px solid rgba(107,90,62,.4); }
-  .wpad .puck { width:20px; height:20px; }
-  .wgrid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
-  .wgrid .key { padding:8px 1px; font-size:8.5px; }
+  .wexpr { font-size:13.5px; font-weight:700; color:#2b2118; text-align:center;
+           margin:4px 0 6px; font-style:italic; }
+  /* Proper circular joystick (was stretched into an oval by flex:1) */
+  .wpad { position:relative; width:min(100%,150px); aspect-ratio:1; flex:none;
+          margin:4px auto 0; border-radius:50%; touch-action:none; cursor:grab;
+          background: radial-gradient(circle at 50% 36%, #fffdf6, #e6dcc4 72%);
+          border:2px solid rgba(107,90,62,.5);
+          box-shadow: inset 0 5px 14px rgba(70,55,30,.20), 0 5px 14px rgba(70,55,30,.18);
+          transition: box-shadow .2s, border-color .2s; }
+  .wpad:active { cursor:grabbing; border-color:#ff69b4; }
+  .wpad::before, .wpad::after { content:''; position:absolute; background:rgba(107,90,62,.22); }
+  .wpad::before { left:50%; top:16%; bottom:16%; width:1px; }
+  .wpad::after  { top:50%; left:16%; right:16%; height:1px; }
+  .wpad .puck { width:36px; height:36px; background:#3a2f22;
+                box-shadow:0 5px 13px rgba(70,55,30,.45); }
+  .wgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .wgrid .key { padding:9px 1px; font-size:9px; border-radius:12px; }
   .wscroll { overflow-y:auto; scrollbar-width:none; }
   .wscroll::-webkit-scrollbar { display:none; }
 
   /* Trigger mapping rows */
-  .trigrow { display:flex; gap:6px; align-items:center; margin-bottom:6px;
-             background:#fdf9ee; border:1px solid #d9c9a3; border-radius:10px; padding:7px 9px; }
-  .triglabel { flex:1; font-size:10px; color:#4a3d2a; min-width:0; }
-  .tsel { background:#fffdf6; color:#2b2118; border:1px solid #cbb98f; border-radius:8px;
-          padding:6px 4px; font-size:10px; flex:1; min-width:0; cursor:pointer; font-family:inherit; }
-  .tsel:focus { outline:1px solid #ff69b4; }
-  .purrbtn { flex:none; width:28px; height:28px; border-radius:8px; border:1px solid #cbb98f;
-             background:#fffdf6; color:#8b7645; font-size:12px; cursor:pointer; padding:0; }
-  .purrbtn.on { background:#ff69b440; border-color:#ff69b4; color:#d63384; }
+  .trigrow { display:flex; gap:8px; align-items:center; margin-bottom:8px;
+             background:#fdf9ee; border:none; border-radius:16px; padding:9px 11px;
+             box-shadow:0 2px 8px rgba(70,55,30,.10); }
+  .triglabel { flex:1; font-size:11px; color:#4a3d2a; min-width:0; font-weight:600; }
+  .tsel { background:#fffdf6; color:#2b2118; border:1px solid rgba(107,90,62,.30); border-radius:10px;
+          padding:8px 5px; font-size:10.5px; flex:1; min-width:0; cursor:pointer; font-family:inherit;
+          box-shadow:inset 0 1px 3px rgba(70,55,30,.10); transition:border-color .15s; }
+  .tsel:focus { outline:none; border-color:#ff69b4; }
+  .purrbtn { flex:none; width:30px; height:30px; border-radius:50%; border:1px solid rgba(107,90,62,.30);
+             background:#fffdf6; color:#8b7645; font-size:13px; cursor:pointer; padding:0;
+             transition:background .15s, transform .12s; }
+  .purrbtn:active { transform:scale(.9); }
+  .purrbtn.on { background:#ff69b433; border-color:#ff69b4; color:#d63384; }
 
-  /* Head gesture pad (virtual touch) */
-  .headpad-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
-  .headpad { width:118px; height:118px; border-radius:50%; display:flex; align-items:center;
+  /* Head gesture pad — modern primary action */
+  .headpad-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .headpad { width:132px; height:132px; border-radius:50%; display:flex; align-items:center;
              justify-content:center; cursor:pointer; touch-action:none; -webkit-user-select:none;
-             user-select:none; font-size:14px; font-weight:700; color:#2b2118;
-             background: radial-gradient(circle at 50% 40%, rgba(77,124,255,.30), rgba(77,124,255,.10) 70%);
-             border:2px solid #4d7cffaa;
-             box-shadow:0 6px 16px rgba(70,55,30,.25), inset 0 -6px 14px rgba(70,55,30,.12);
-             transition: transform .08s, box-shadow .12s, border-color .12s; font-family:inherit; }
-  .headpad.press { transform:scale(.93); border-color:#ff69b4;
-                   box-shadow:0 2px 8px rgba(70,55,30,.3), inset 0 -3px 10px rgba(70,55,30,.15);
-                   background: radial-gradient(circle at 50% 40%, rgba(255,105,180,.42), rgba(255,105,180,.14) 70%); }
+             user-select:none; font-size:16px; font-weight:700; color:#fdf9ee;
+             background:radial-gradient(circle at 35% 28%, #7a6ab0, #4a3d70 75%);
+             border:none;
+             box-shadow:0 8px 22px rgba(74,61,112,.40), inset 0 2px 4px rgba(255,255,255,.25);
+             transition: transform .1s, box-shadow .15s, border-color .15s; font-family:inherit; }
+  .headpad.press { transform:scale(.94);
+                   box-shadow:0 3px 10px rgba(214,51,132,.45), inset 0 2px 6px rgba(0,0,0,.25);
+                   background:radial-gradient(circle at 35% 28%, #ff7ab8, #c9337e 75%); }
 
   /* Peer toggle */
-  .peerrow { display:flex; gap:8px; align-items:center; background:#fdf9ee;
-             border:1px solid #d9c9a3; border-radius:10px; padding:8px 10px; }
-  .peerlabel { flex:1; font-size:10px; color:#4a3d2a; }
-  .sw { width:38px; height:22px; border-radius:12px; background:#c9b78e; position:relative;
+  .peerrow { display:flex; gap:10px; align-items:center; background:#fdf9ee;
+             border:none; border-radius:16px; padding:11px 13px;
+             box-shadow:0 2px 8px rgba(70,55,30,.10); }
+  .peerlabel { flex:1; font-size:11px; color:#4a3d2a; font-weight:600; }
+  .sw { width:44px; height:26px; border-radius:13px; background:#c9b78e; position:relative;
         cursor:pointer; flex:none; transition: background .2s; }
-  .sw::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px;
-               border-radius:50%; background:#fffdf6; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .sw::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px;
+               border-radius:50%; background:#fffdf6; transition:left .2s;
+               box-shadow:0 2px 5px rgba(70,55,30,.35); }
   .sw.on { background:#34c759; }
-  .sw.on::after { left:18px; }
-  .peerbtn { flex:none; font-size:10px; padding:6px 10px; border-radius:8px; border:1px solid #5b4b8a;
-             background:#5b4b8a33; color:#4a3d70; cursor:pointer; font-family:inherit; }
-  .peerbtn:disabled { opacity:.35; cursor:default; }
+  .sw.on::after { left:21px; }
+  .peerbtn { flex:none; font-size:10.5px; padding:8px 13px; border-radius:999px;
+             border:none; background:#5b4b8a; color:#fdf9ee; cursor:pointer; font-family:inherit;
+             box-shadow:0 2px 6px rgba(91,75,138,.35); transition:transform .12s, opacity .15s; }
+  .peerbtn:hover { transform:translateY(-1px); }
+  .peerbtn:disabled { opacity:.35; cursor:default; transform:none; }
 
   /* Idle dim + auto-sleep overlay (mirrors firmware backlight/sleep timers) */
   #sleepDim { position:fixed; inset:0; background:#000; opacity:0; pointer-events:none;
               transition:opacity 1.2s; z-index:60; }
 
   /* Sound preset rows (mirrors the app's custom-sound manager) */
-  .sndrow { display:flex; gap:6px; align-items:center; margin-bottom:6px;
-            background:#fdf9ee; border:1px solid #d9c9a3; border-radius:10px; padding:7px 9px; }
-  .sndname { width:58px; font-size:10px; color:#4a3d2a; }
-  .chip { font-size:9px; padding:2px 7px; border-radius:9px; background:#e7dcc0; color:#6b5a3e; }
-  .chip.custom { background:#ff69b488; color:#7a1f4c; }
-  .minibtn { font-size:9px; padding:5px 8px; border-radius:8px; border:1px solid #cbb98f;
-             background:#fffdf6; color:#4a3d2a; cursor:pointer; margin-left:auto; font-family:inherit; }
-  .minibtn + .minibtn { margin-left:4px; }
-  .minibtn.up { border-color:#4d7cff88; background:#4d7cff2a; color:#3a55b8; }
-  .minibtn.play { border-color:#9b59d088; background:#9b59d02a; color:#6b3fa0; }
-  button.active { background:#34c759 !important; color:#063 !important; border-color:#2ca84f !important; }
+  .sndrow { display:flex; gap:8px; align-items:center; margin-bottom:8px;
+            background:#fdf9ee; border:none; border-radius:16px; padding:9px 11px;
+            box-shadow:0 2px 8px rgba(70,55,30,.10); }
+  .sndname { width:58px; font-size:11px; color:#4a3d2a; font-weight:600; }
+  .chip { font-size:9.5px; padding:3px 9px; border-radius:999px; background:#e7dcc0; color:#6b5a3e; }
+  .chip.custom { background:#ff69b455; color:#a1286b; }
+  .minibtn { font-size:10px; padding:6px 11px; border-radius:999px; border:none;
+             background:rgba(107,90,62,.14); color:#4a3d2a; cursor:pointer; margin-left:auto;
+             font-family:inherit; transition:transform .12s, background .15s; }
+  .minibtn:hover { transform:translateY(-1px); }
+  .minibtn + .minibtn { margin-left:5px; }
+  .minibtn.up { background:#4d7cff2e; color:#3a55b8; }
+  .minibtn.play { background:#9b59d02e; color:#6b3fa0; }
+  button.active { background:#34c759 !important; color:#053 !important;
+                  border-color:rgba(44,168,79,.6) !important; }
 
   /* Nickname row (NAME command + Puff Puff gag) */
   .nickrow { display:flex; gap:6px; margin-bottom:4px; }
@@ -164,8 +206,9 @@
                    border-radius:8px; padding:7px 9px; font-size:11px; font-family:inherit;
                    min-width:0; }
   .nickrow input:focus { outline:1px solid #5b4b8a; }
-  .nickrow button { font-size:10px; padding:7px 12px; background:#5b4b8a; color:#fdf9ee;
-                    border-color:#5b4b8a; }
+  .nickrow button { font-size:11px; padding:8px 16px; background:#5b4b8a; color:#fdf9ee;
+                    border-color:#5b4b8a; border-radius:999px;
+                    box-shadow:0 2px 8px rgba(91,75,138,.35); }
   .nickrow button:hover { background:#4a3d70; }
   .nickmsg { font-family:Georgia, serif; font-style:italic; font-size:10.5px; color:#5b4b8a;
              min-height:14px; margin-bottom:2px; }
@@ -185,7 +228,10 @@
 </style>
 </head>
 <body>
-<h2>Brushbuddy Eye Simulator</h2>
+<div class="pagehead">
+  <h2>Brushbuddy</h2>
+  <div class="pagesub">✧ live preview of the animatronic ✧</div>
+</div>
 <canvas id="c" width="320" height="160"></canvas>
 <div class="controls">
   <button onclick="setExpr('IDLE')">IDLE</button>
@@ -370,7 +416,8 @@ function defaultSound(e){
 function setExpr(e, snd, holdMs){
   lastActivity = performance.now();
   const hold0 = (holdMs === undefined) ? 6000 : holdMs;  // firmware EXPR hold
-  const hold = (e === 'DERPY') ? 12000 : hold0;          // firmware setEmotion override
+  const hold = (e === 'DERPY') ? 12000                    // setEmotion overrides…
+            : (e === 'DRIFT') ? 8000 : hold0;             // …for the full drift cycle
   if (e === expr && snd === undefined) {
     // same expression: firmware still refreshes the hold timer
     if (e !== 'IDLE' && e !== 'SLEEP') exprUntil = performance.now() + hold;
@@ -385,6 +432,7 @@ function setExpr(e, snd, holdMs){
     updateRemoteUI();
     if (e==='SLEEP') bumpJ('naps');
     if (e==='DERPY') { derpyStart = performance.now(); }
+    if (e==='DRIFT') { driftStart = performance.now(); }
   }
   const s = (snd === undefined) ? defaultSound(e) : (snd || null);
   if (s) play(s);
@@ -550,10 +598,14 @@ function updateRemoteUI() {
 }
 
 // ---------- Remote UI construction ----------
-function makeKey(label, color, cmd) {
+function makeKey(label, color, cmd, glyph) {
   const b = document.createElement('div');
   b.className = 'key';
-  b.textContent = label;
+  if (glyph) {
+    b.innerHTML = glyph + '<br><span style="font-size:9.5px">' + label + '</span>';
+  } else {
+    b.textContent = label;
+  }
   b.style.borderColor = color;
   b.style.background = color + '40';
   b.addEventListener('pointerdown', e => { e.preventDefault(); sendCmd(cmd); });
@@ -562,13 +614,13 @@ function makeKey(label, color, cmd) {
 function fillGrid(id, items) {
   const g = document.getElementById(id);
   if (!g) return;
-  items.forEach(([label, color, cmd]) => g.appendChild(makeKey(label, color, cmd)));
+  items.forEach(([label, color, cmd, glyph]) => g.appendChild(makeKey(label, color, cmd, glyph)));
 }
 
 const EXPR_KEYS = [
-  ['IDLE','#4d7cff'], ['HAPPY','#ff69b4'], ['SQUINT','#e6c200'], ['ANGRY','#ff453a'],
-  ['LOVE','#ff69b4'], ['HATE','#ff453a'], ['SURPRISED','#ff9f0a'], ['SLEEPY','#7d5fff'],
-  ['SLEEP','#7d5fff'], ['DERPY','#20c9b4'], ['DRIFT','#20c9b4']
+  ['IDLE','#4d7cff','😌'], ['HAPPY','#ff69b4','☺️'], ['SQUINT','#e6c200','🙄'], ['ANGRY','#ff453a','😠'],
+  ['LOVE','#ff69b4','💗'], ['HATE','#ff453a','😤'], ['SURPRISED','#ff9f0a','😲'], ['SLEEPY','#7d5fff','🥱'],
+  ['SLEEP','#7d5fff','😴'], ['DERPY','#20c9b4','😜'], ['DRIFT','#20c9b4','🌀']
 ];
 const TOUCH_KEYS = [
   ['Head', 'head', '#34c759']   // the only physical touch sensor
@@ -579,13 +631,13 @@ const FOOD_KEYS = [
 const SOUND_KEYS = ['phee','hiss','chirp','grumble','wake'];
 
 const SENSOR_KEYS = [
-  ['Picked up', 'pickup', '#ff9f0a'],
-  ['Shaken',    'shake',  '#ff453a'],
-  ['Tilted',    'tilt',   '#e6c200']
+  ['Picked up', 'pickup', '#ff9f0a', '🤚'],
+  ['Shaken',    'shake',  '#ff453a', '🫨'],
+  ['Tilted',    'tilt',   '#e6c200', '🙃']
 ];
 
-fillGrid('phExprGrid',  EXPR_KEYS.map(([l,c]) => [l, c, 'EXPR,' + l]));
-fillGrid('phSensorGrid', SENSOR_KEYS.map(([l,k,c]) => [l, c, 'TOUCH,' + k]));
+fillGrid('phExprGrid',  EXPR_KEYS.map(([l,c,g]) => [l, c, 'EXPR,' + l, g]));
+fillGrid('phSensorGrid', SENSOR_KEYS.map(([l,k,c,g]) => [l, c, 'TOUCH,' + k, g]));
 fillGrid('phFoodGrid',  FOOD_KEYS.map(([l,k,c]) => [l, c, 'FOOD,' + k]));
 fillGrid('phSoundGrid', SOUND_KEYS.map(s => [s[0].toUpperCase() + s.slice(1), '#9b59d0', 'SOUND,' + s])
                                       .concat([['Purr 📳', '#ff69b4', 'PURR,5000']]));
@@ -806,9 +858,9 @@ let exprUntil = 0;                  // emotion hold window (firmware emotionUnti
 let simNickname = 'Brushbuddy';
 try { simNickname = localStorage.getItem('bbNickname') || 'Brushbuddy'; } catch(e){}
 
-// Per-eye saccade glances (ported from firmware updateEye — random, independent)
-function mkGlance(){ return { lx: 0, ly: 0, last: 0, next: 1500 }; }
-const glanceL = mkGlance(), glanceR = mkGlance();
+// Per-eye saccade glances — shared state: BOTH eyes look the same way at the
+// same time (pair-synced), firmware glanceTX/TY equivalent
+const glance = { lx: 0, ly: 0, last: 0, next: 1500 };
 
 // Journal counters (persisted locally, mirrors the device's NVS diary)
 let journal = { pets: 0, feeds: 0, naps: 0, greetz: 0, dreams: 0 };
@@ -824,6 +876,8 @@ function bumpJ(key) {
 
 // Derpy state
 let derpyStart = 0;
+// Drift state (animated cycle, mirrors firmware driftStartMs)
+let driftStart = 0;
 
 function updateBlink(dt){
   // skip blink in sleep/sleepy/derpy (derpy handles its own)
@@ -996,6 +1050,21 @@ function derpyOpenness(isLeft, now){
   return 1.0;                          // open for the rest of the cycle
 }
 
+// Animated drift (mirrors firmware: 3.5 s drift apart, 1 s snap, every 6 s)
+function driftOffset(isLeft, now){
+  const elapsed = (now - driftStart) / 1000;
+  const cycle = elapsed % 6.0;
+  let x = 0;
+  if (cycle < 3.5) {
+    const u = cycle / 3.5;
+    x = u*u*(3-2*u) * 34;
+  } else if (cycle < 4.5) {
+    const u = cycle - 3.5;
+    x = 34 * (1 - u*u*(3-2*u));
+  }
+  return isLeft ? -x : x;
+}
+
 function lerpCur(target, dt){
   const k = Math.min(1, dt/60); // per-frame lerp toward target
   const rate = 0.18;
@@ -1053,7 +1122,7 @@ function drawEye(cx, cy, e, isLeft, t, op){
     case 'SLEEPY': py=8; break;
     case 'LOOK_L': px=-24; py=-2; break;
     case 'LOOK_R': px=24; py=-2; break;
-    case 'DRIFT': px = isLeft ? -26 : 26; py = 0; break;   // firmware: static drift, lerp animates it
+    case 'DRIFT': px = driftOffset(isLeft, performance.now()); py = 0; break;
     default: break;
   }
   const hmphActive = (e === 'IDLE' && performance.now() < hmphUntil);
@@ -1061,16 +1130,15 @@ function drawEye(cx, cy, e, isLeft, t, op){
   // IDLE/SQUINT saccades — ported exactly from firmware updateEye:
   // random targets, independent per eye, next glance 1400–3200 ms
   if (e === 'IDLE' || e === 'SQUINT') {
-    const g = isLeft ? glanceL : glanceR;
     const nowMs = performance.now();
-    if (nowMs - g.last > g.next) {
-      g.lx = Math.floor(Math.random() * 45) - 22;
-      g.ly = (e === 'SQUINT') ? 0 : Math.floor(Math.random() * 30) - 14;
-      g.last = nowMs;
-      g.next = 1400 + Math.random() * 1800;
+    if (nowMs - glance.last > glance.next) {
+      glance.lx = Math.floor(Math.random() * 45) - 22;
+      glance.ly = Math.floor(Math.random() * 30) - 14;
+      glance.last = nowMs;
+      glance.next = 1400 + Math.random() * 1800;
     }
-    px = g.lx;
-    py = g.ly;
+    px = glance.lx;
+    py = (e === 'SQUINT') ? 0 : glance.ly;
   }
 
   if (e==='DERPY') {
