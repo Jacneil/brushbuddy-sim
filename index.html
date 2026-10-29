@@ -423,6 +423,9 @@
 
           <div class="sect">Sensors</div>
           <div class="grid c3" id="phSensorGrid"></div>
+          <div class="grid c1" style="margin-top:8px">
+            <button class="key" id="peekBtn" style="border-color:#5b4b8a; background:#5b4b8a33">👀 Peek-a-boo</button>
+          </div>
 
           </div>
           <div class="itabpage" id="tpSounds">
@@ -585,6 +588,21 @@ function setExpr(e, snd, holdMs){
   }
   const changed = e !== expr;
   if (changed) {
+    // longest-nap bookkeeping: leaving sleep closes the nap
+    if (expr === 'SLEEP' && e !== 'SLEEP' && napStartedAt) {
+      const dur = performance.now() - napStartedAt;
+      if (dur > napMaxMs) {
+        napMaxMs = dur;
+        try { localStorage.setItem('bbNapMax', String(dur)); } catch(err){}
+      }
+      napStartedAt = 0;
+    }
+    if (e === 'SLEEP') { napStartedAt = performance.now(); bumpJ('naps'); }
+    // favorite-face tally (drives the journal's "Favorite face" line)
+    if (e !== 'IDLE' && e !== 'SLEEP') {
+      exprCounts[e] = (exprCounts[e] || 0) + 1;
+      try { localStorage.setItem('bbExprCounts', JSON.stringify(exprCounts)); } catch(err){}
+    }
     prevExpr = expr;
     expr = e;
     transT = 0;
@@ -677,6 +695,7 @@ function fireTrigger(name){
   if (expr === 'SLEEP' && r.emo !== 'SLEEP') { setExpr('IDLE'); play('wake'); }
   setExpr(r.emo, r.snd, 3500);   // firmware fireTrig hold
   if (r.purr) startPurr(6000);
+  if (name === 'love') inkUntil = performance.now() + 60000;  // fed ink → smudge
   // journal
   if (['head','double','triple','hold','overpet','pat'].includes(name)) bumpJ('pets');
   else if (name === 'love' || name === 'hate') bumpJ('feeds');
@@ -707,6 +726,18 @@ function sendCmd(text) {
     gaze.y = clampf(y - 80, -34, 34);
     gaze.until = performance.now() + 2500;   // matches REMOTE_GAZE_MS in firmware
   } else if (op === 'TOUCH') {
+    if (arg === 'peek') {
+      // peek-a-boo: first press squeezes the lids shut, second says "boo!"
+      if (peekHideUntil && performance.now() < peekHideUntil) {
+        peekHideUntil = 0;
+        wakeIfNeeded();
+        setExpr('SURPRISED', 'chirp', 2500);
+      } else {
+        wakeIfNeeded();
+        peekHideUntil = performance.now() + 1200;
+      }
+      return;
+    }
     if (TRIGGER_DEFS.some(([k]) => k === arg)) { fireTrigger(arg); return; }
     wakeIfNeeded();
     // legacy app-only zones with their firmware hold windows
@@ -881,6 +912,12 @@ function headPadUp(){
   pad.addEventListener('pointercancel', headPadUp);
 })();
 
+// Peek-a-boo game (mirrors the firmware's TOUCH,peek state machine)
+(function wirePeek(){
+  const b = document.getElementById('peekBtn');
+  if (b) b.addEventListener('pointerdown', e => { e.preventDefault(); sendCmd('TOUCH,peek'); });
+})();
+
 // ---------- Peer notice toggle ----------
 let peerOn = false;
 function setPeer(on){
@@ -1041,6 +1078,14 @@ function bumpJ(key) {
   renderJournal();
 }
 
+// Refinement state (mirrors firmware: progress eyes / peek / ink / journal depth)
+let peekHideUntil = 0;          // peek-a-boo: lids shut until then
+let inkUntil = 0;               // ink smudge fades over 60 s after feeding
+let napStartedAt = 0, napMaxMs = 0;
+let exprCounts = {};
+try { const c = JSON.parse(localStorage.getItem('bbExprCounts') || 'null'); if (c) exprCounts = c; } catch(e){}
+try { napMaxMs = parseFloat(localStorage.getItem('bbNapMax') || '0') || 0; } catch(e){}
+
 // Derpy state
 let derpyStart = 0;
 // Drift state (animated cycle, mirrors firmware driftStartMs)
@@ -1169,6 +1214,11 @@ function journalLines(){
   if (j.naps)   L.push(`${j.naps} naps taken. Each one dignified.`);
   if (j.greetz) L.push(`${j.greetz} chat(s) with the other Brushbuddy. It went splendidly.`);
   if (j.dreams) L.push(`${j.dreams} dreams. All of them about ink.`);
+  const fav = Object.keys(exprCounts)
+    .filter(k => k !== 'IDLE' && k !== 'SLEEP')
+    .reduce((a, b) => (exprCounts[b] > (exprCounts[a] || 0) ? b : a), null);
+  if (fav && exprCounts[fav] > 0) L.push(`Favorite face: ${fav} (×${exprCounts[fav]}).`);
+  if (napMaxMs > 0) L.push(`Longest nap: ${Math.max(1, Math.round(napMaxMs / 60000))} min.`);
   return L;
 }
 function renderJournal(){
@@ -1254,6 +1304,20 @@ function drawEye(cx, cy, e, isLeft, t, op){
   ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.arc(cx,cy,78,0,Math.PI*2); ctx.fill();
 
+  // peek-a-boo: squeezed-shut lids (with a gentle quiver)
+  if (performance.now() < peekHideUntil) {
+    const quiver = Math.sin(performance.now() * 0.02) * 1.5;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let dx = -42; dx <= 42; dx++) {
+      const dy = (dx * dx) / 110;
+      const x = cx + dx, y = cy + 4 - dy + quiver;
+      if (dx === -42) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    return;
+  }
+
   if (e === 'SLEEP') {
     // subtle breath lift synced to 6.0s breathing cycle + dream twitches
     const bt = ((performance.now()/1000) % 6.0) / 6.0;
@@ -1275,6 +1339,19 @@ function drawEye(cx, cy, e, isLeft, t, op){
   const scleraR = Math.round(cur.scleraR);
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(cx,cy,scleraR,0,Math.PI*2); ctx.fill();
+
+  // ink smudge — fed Conjuring Ink, fades over a minute (drawn under the pupil)
+  if (performance.now() < inkUntil) {
+    const k = (inkUntil - performance.now()) / 60000;
+    const r1 = 11 * k, r2 = 7 * k;
+    if (r1 > 1) {
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(cx - 26, cy - 28, r1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 14, cy - 34, r2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 32, cy - 16, r2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(cx - 22, cy - 20, 3, 14 * k);   // drip
+    }
+  }
 
   // pupil pos
   let px=0, py=0, pr=Math.round(cur.pr);
@@ -1420,25 +1497,40 @@ function drawEye(cx, cy, e, isLeft, t, op){
   //   3) steady state: green hollow bubbles + GREEN lightning bolt.
   if (chargingSim && e === 'IDLE') {
     const GREEN = '#34c759';
-    // --- steady face (drawn first so the draining liquid reveals it) ---
-    for (let i = 0; i < 3; i++) {
-      const ph = ((t * 0.45 + i * 0.37) % 1 + 1) % 1;
-      const bx = cx + Math.sin(t * 1.1 + i * 2.1) * 44;
-      const by = cy + 72 - ph * 118;
-      const br = 3 + i + ph * 3;
-      if (by - br > cy - 64) {
-        ctx.fillStyle = GREEN;
-        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
+    // --- steady face: green liquid LEVEL tracks the real battery %,
+    //     bolt bobbing just above the surface (flood reveals it) ---
+    const pct = Math.max(0, batt);
+    const surfY = (cy + 80) - (140 * pct / 100);    // 0% → cy+80, 100% → cy-60
+    if (surfY < cy + 80) {
+      ctx.fillStyle = GREEN;
+      ctx.fillRect(cx - 80, surfY, 160, (cy + 80) - surfY);
+      for (let x = -4; x < 168; x += 12) {          // blobby surface
+        const wy = surfY + Math.sin(x * 0.13 + t * 5) * 2;
+        ctx.beginPath(); ctx.arc(cx - 80 + x, wy, 6, 0, Math.PI * 2); ctx.fill();
+      }
+      const travel = (cy + 70) - surfY;              // air bubbles in the liquid
+      if (travel > 12) {
         ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.arc(bx, by, Math.max(1, br - 2), 0, Math.PI*2); ctx.fill();
+        for (let i = 0; i < 3; i++) {
+          const ph = ((t * 0.5 + i * 0.37) % 1 + 1) % 1;
+          const by = (cy + 70) - ph * travel;
+          if (by > surfY + 5) {
+            ctx.beginPath();
+            ctx.arc(cx - 20 + i * 24 + Math.sin(t * 2 + i) * 5, by, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
       }
     }
     const pulse = 1 + 0.10 * Math.sin(t * 6);
     const bolt = [[-2,-24],[9,-5],[3,-5],[7,9],[-5,-7],[1,-7],[-7,-18]];
-    ctx.fillStyle = GREEN;
+    let bcy = surfY - 26;                              // rides just above the surface
+    if (bcy < cy - 44) bcy = cy - 44;                  // parks near the top when full
+    bcy += Math.sin(t * 3) * 3;                        // gentle bob
+    ctx.fillStyle = (bcy > surfY - 20) ? '#000' : GREEN;   // over green → black
     ctx.beginPath();
     for (let i = 0; i < bolt.length; i++) {
-      const x = cx + bolt[i][0] * pulse, y = cy + bolt[i][1] * pulse;
+      const x = cx + bolt[i][0] * pulse, y = bcy + bolt[i][1] * pulse;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
@@ -1681,6 +1773,34 @@ function fwReboot() {
   fwStatusText();
 })();
 
+// Update progress on his eyes (mirrors the firmware's drawUpdateProgress)
+function drawUpdateProgressSim(now) {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, 320, 160);
+  for (const ox of [0, 160]) {          // both displays show the same screen
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px Georgia, serif';
+    ctx.fillText(simVersion, 80 + ox, 44);
+    const bx = 30 + ox, bw = 100, by = 74, bh = 14;
+    ctx.fillStyle = '#2104';                       // track
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 7); else ctx.rect(bx, by, bw, bh);
+    ctx.fill();
+    const w = bw * Math.max(0, Math.min(100, fwPct)) / 100;
+    if (w >= 2) {
+      ctx.fillStyle = '#34c759';                   // fill
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bx, by, w, bh, Math.min(7, w / 2));
+      else ctx.rect(bx, by, w, bh);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#34c759';
+    ctx.font = 'bold 22px Georgia, serif';
+    ctx.fillText(Math.round(fwPct) + '%', 80 + ox, 112);
+  }
+}
+
 // Update-complete screen on his eyes (mirrors the firmware's drawUpdateScreen:
 // both displays show the same green check + version + UPDATED)
 function drawUpdateScreen(now) {
@@ -1802,8 +1922,9 @@ function loop(now){
   updateU2(dt, now);
   drawUnit2(now);
 
-  // firmware update complete → his eyes announce it (mirrors drawUpdateScreen)
+  // firmware update flow: progress screen while receiving, UPDATED screen when done
   if (fwState === 'done' || fwState === 'rebooting') drawUpdateScreen(now);
+  else if (fwState === 'receiving') drawUpdateProgressSim(now);
 
   requestAnimationFrame(loop);
 }
