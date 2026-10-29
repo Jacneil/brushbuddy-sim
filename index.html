@@ -4,65 +4,71 @@
 <meta charset="utf-8">
 <title>Brushbuddy Eye Simulator</title>
 <style>
-  body { background:#12141a; color:#eee; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; margin:0; padding:20px; }
-  canvas { border:1px solid #333; border-radius:12px; }
+  body { background:#f6efd9; color:#2b2118; font-family:Georgia, 'Times New Roman', serif;
+         display:flex; flex-direction:column; align-items:center; margin:0; padding:20px; }
+  canvas { border:2px solid #6b5a3e; border-radius:12px;
+           box-shadow: 0 6px 18px rgba(70,55,30,.35); }
   .controls { margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:640px; }
-  button { padding:8px 14px; background:#2a2d3a; color:#eee; border:1px solid #444; border-radius:6px; cursor:pointer; }
-  button:hover { background:#3a3d4a; }
-  #status { margin-top:10px; font-size:13px; color:#aaa; }
+  button { padding:8px 14px; background:#fdf9ee; color:#2b2118; border:1px solid #6b5a3e;
+           border-radius:6px; cursor:pointer; font-family:inherit; font-size:13px; }
+  button:hover { background:#f0e6cc; }
+  #status { margin-top:10px; font-size:14px; color:#6b5a3e; font-style:italic; }
 
   /* ---------- Remote devices ---------- */
   #remotes { display:flex; gap:36px; flex-wrap:wrap; justify-content:center; align-items:flex-start; margin-top:26px; }
-  .rlabel { text-align:center; font-size:13px; color:#9aa; margin-bottom:8px; letter-spacing:.4px; }
-  .rnote { text-align:center; font-size:11px; color:#667; max-width:300px; margin-top:8px; line-height:1.5; }
+  .rlabel { text-align:center; font-size:14px; color:#6b5a3e; margin-bottom:8px; letter-spacing:.4px;
+            font-style:italic; }
+  .rnote { text-align:center; font-size:11px; color:#8b7645; max-width:300px; margin-top:8px; line-height:1.5; }
 
   /* iPhone frame */
   .iphone { width:320px; height:640px; background:#000; border-radius:52px; padding:11px;
             box-shadow: 0 0 0 2px #3a3d47, 0 18px 50px rgba(0,0,0,.6); position:relative; }
-  .iphone .screen { width:100%; height:100%; background:#0b0b0e; border-radius:42px; overflow:hidden;
+  .iphone .screen { width:100%; height:100%; background:#f4ecd7; border-radius:42px; overflow:hidden;
                     position:relative; display:flex; flex-direction:column; }
   .island { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:96px; height:26px;
             background:#000; border-radius:14px; z-index:5; }
-  .istatus { display:flex; justify-content:space-between; padding:14px 22px 4px; font-size:11px; color:#ddd; }
+  .istatus { display:flex; justify-content:space-between; padding:14px 22px 4px; font-size:11px; color:#3a3020; }
   .ipage { flex:1; overflow-y:auto; padding:6px 14px 18px; scrollbar-width:none; }
-  .ipage::-webkit-scrollbar { display:none; }
-  .ititle { font-size:17px; font-weight:700; color:#fff; text-align:center; margin:6px 0 10px; }
+  .ipage::-webkit-scrollbar { display: none; }
+  .ititle { font-size:17px; font-weight:700; color:#2b2118; text-align:center; margin:6px 0 10px;
+            font-style:italic; }
 
-  .banner { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.06);
-            border-radius:12px; padding:9px 11px; margin-bottom:12px; }
+  .banner { display:flex; align-items:center; gap:8px; background:#fdf9ee;
+            border:1px solid #d9c9a3; border-radius:12px; padding:9px 11px; margin-bottom:12px; }
   .banner .dot { width:8px; height:8px; border-radius:50%; background:#3ddc6e; flex:none; }
   .banner .btxt { flex:1; min-width:0; }
-  .banner .b1 { font-size:11.5px; font-weight:600; color:#eee; }
-  .banner .b2 { font-size:10px; color:#8b8f9a; }
+  .banner .b1 { font-size:11.5px; font-weight:600; color:#2b2118; }
+  .banner .b2 { font-size:10px; color:#8b7645; }
 
-  .pad { background:rgba(255,255,255,.06); border-radius:14px; padding:12px; margin-bottom:12px;
+  .pad { background:#fdf9ee; border:1px solid #d9c9a3; border-radius:14px; padding:12px; margin-bottom:12px;
          -webkit-user-select:none; user-select:none; touch-action:none; }
-  .padhead { font-size:9.5px; font-weight:700; color:#8b8f9a; letter-spacing:.8px; text-transform:uppercase; margin-bottom:8px; }
+  .padhead { font-size:9.5px; font-weight:700; color:#8b7645; letter-spacing:.8px; text-transform:uppercase; margin-bottom:8px; }
   .padarea { position:relative; width:100%; aspect-ratio:1; border-radius:50%; cursor:grab;
-             background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.10), rgba(255,255,255,.03) 70%);
-             border:1px solid rgba(255,255,255,.15); touch-action:none; }
+             background: radial-gradient(circle at 50% 45%, rgba(107,90,62,.14), rgba(107,90,62,.05) 70%);
+             border:1.5px solid rgba(107,90,62,.5); touch-action:none; }
   .padarea:active { cursor:grabbing; }
-  .padarea::before, .padarea::after { content:''; position:absolute; background:rgba(255,255,255,.12); }
+  .padarea::before, .padarea::after { content:''; position:absolute; background:rgba(107,90,62,.3); }
   .padarea::before { left:50%; top:12%; bottom:12%; width:1px; }
   .padarea::after  { top:50%; left:12%; right:12%; height:1px; }
-  .puck { position:absolute; width:26px; height:26px; border-radius:50%; background:#fff;
+  .puck { position:absolute; width:26px; height:26px; border-radius:50%; background:#3a2f22;
           transform:translate(-50%,-50%);
           transition: left .45s cubic-bezier(.22,1,.36,1), top .45s cubic-bezier(.22,1,.36,1),
                       box-shadow .2s, width .15s, height .15s;
           box-shadow:0 0 0 rgba(255,105,180,0); pointer-events:none; }
   .puck.drag { background:#ff69b4; box-shadow:0 0 16px rgba(255,105,180,.8);
                transition: box-shadow .2s, width .15s, height .15s; }
-  .padnote { font-size:9px; color:#666d7a; text-align:center; margin-top:7px; }
+  .padnote { font-size:9.5px; color:#8b7645; text-align:center; margin-top:7px; font-style:italic; }
 
-  .sect { font-size:9.5px; font-weight:700; color:#8b8f9a; letter-spacing:.8px; text-transform:uppercase;
-          margin:10px 0 6px; }
+  .sect { font-size:10px; font-weight:700; color:#8b7645; letter-spacing:.8px; text-transform:uppercase;
+          margin:10px 0 6px; font-style:italic; }
   .grid { display:grid; gap:6px; }
   .grid.c1 { grid-template-columns:1fr; }
   .grid.c4 { grid-template-columns:repeat(4,1fr); }
   .grid.c3 { grid-template-columns:repeat(3,1fr); }
   .grid.c2 { grid-template-columns:repeat(2,1fr); }
-  .key { padding:8px 2px; border-radius:10px; font-size:9.5px; font-weight:600; color:#fff;
-         border:1px solid; cursor:pointer; text-align:center; -webkit-user-select:none; user-select:none; }
+  .key { padding:8px 2px; border-radius:10px; font-size:9.5px; font-weight:600; color:#2b2118;
+         border:1px solid; cursor:pointer; text-align:center; -webkit-user-select:none; user-select:none;
+         font-family:inherit; }
   .key:active { transform:scale(.94); }
   .ipad .key { font-size:10px; padding:9px 2px; }
 
@@ -76,19 +82,21 @@
   .crown { position:absolute; right:-9px; top:70px; width:11px; height:34px; background:#5a5e6b;
            border-radius:4px; box-shadow: inset -2px 0 2px rgba(0,0,0,.5); }
   .sidebtn { position:absolute; right:-7px; top:124px; width:7px; height:44px; background:#4a4d58; border-radius:4px; }
-  .wscreen { width:100%; height:100%; background:#000; border-radius:44px; overflow:hidden;
-             position:relative; display:flex; flex-direction:column; color:#fff; }
-  .wstatus { display:flex; justify-content:space-between; font-size:9.5px; color:#bbb; padding:12px 18px 2px; }
+  .wscreen { width:100%; height:100%; background:#f4ecd7; border-radius:44px; overflow:hidden;
+             position:relative; display:flex; flex-direction:column; color:#2b2118; }
+  .wstatus { display:flex; justify-content:space-between; font-size:9.5px; color:#6b5a3e; padding:12px 18px 2px; }
   .wbody { flex:1; display:flex; flex-direction:column; padding:2px 10px 8px; min-height:0; }
   .wtabbar { display:flex; gap:4px; padding:4px 8px 9px; }
   .wtab { flex:1; text-align:center; font-size:8.5px; padding:5px 0; border-radius:9px;
-          background:rgba(255,255,255,.08); color:#9aa0ad; cursor:pointer; }
+          background:rgba(107,90,62,.14); color:#6b5a3e; cursor:pointer; font-family:inherit; }
   .wtab.on { background:#ff69b4; color:#1a1a1a; font-weight:700; }
   .wpage { flex:1; display:none; flex-direction:column; min-height:0; }
   .wpage.on { display:flex; }
-  .wexpr { font-size:11px; font-weight:700; color:#fff; text-align:center; margin:2px 0 4px; }
+  .wexpr { font-size:11px; font-weight:700; color:#2b2118; text-align:center; margin:2px 0 4px;
+           font-style:italic; }
   .wpad { position:relative; flex:1; border-radius:50%; touch-action:none; cursor:grab;
-          background: radial-gradient(circle, rgba(255,255,255,.10), rgba(255,255,255,.02) 75%); }
+          background: radial-gradient(circle, rgba(107,90,62,.16), rgba(107,90,62,.04) 75%);
+          border:1px solid rgba(107,90,62,.4); }
   .wpad .puck { width:20px; height:20px; }
   .wgrid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
   .wgrid .key { padding:8px 1px; font-size:8.5px; }
@@ -97,40 +105,40 @@
 
   /* Trigger mapping rows */
   .trigrow { display:flex; gap:6px; align-items:center; margin-bottom:6px;
-             background:rgba(255,255,255,.04); border-radius:10px; padding:7px 9px; }
-  .triglabel { flex:1; font-size:10px; color:#ccc; min-width:0; }
-  .tsel { background:#1c1e26; color:#eee; border:1px solid #3a3d4a; border-radius:8px;
-          padding:6px 4px; font-size:10px; flex:1; min-width:0; cursor:pointer; }
+             background:#fdf9ee; border:1px solid #d9c9a3; border-radius:10px; padding:7px 9px; }
+  .triglabel { flex:1; font-size:10px; color:#4a3d2a; min-width:0; }
+  .tsel { background:#fffdf6; color:#2b2118; border:1px solid #cbb98f; border-radius:8px;
+          padding:6px 4px; font-size:10px; flex:1; min-width:0; cursor:pointer; font-family:inherit; }
   .tsel:focus { outline:1px solid #ff69b4; }
-  .purrbtn { flex:none; width:28px; height:28px; border-radius:8px; border:1px solid #3a3d4a;
-             background:#1c1e26; color:#666d7a; font-size:12px; cursor:pointer; padding:0; }
-  .purrbtn.on { background:#ff69b440; border-color:#ff69b4; color:#ff69b4; }
+  .purrbtn { flex:none; width:28px; height:28px; border-radius:8px; border:1px solid #cbb98f;
+             background:#fffdf6; color:#8b7645; font-size:12px; cursor:pointer; padding:0; }
+  .purrbtn.on { background:#ff69b440; border-color:#ff69b4; color:#d63384; }
 
   /* Head gesture pad (virtual touch) */
   .headpad-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .headpad { width:118px; height:118px; border-radius:50%; display:flex; align-items:center;
              justify-content:center; cursor:pointer; touch-action:none; -webkit-user-select:none;
-             user-select:none; font-size:13px; font-weight:700; color:#fff;
-             background: radial-gradient(circle at 50% 40%, #3d6cff55, #3d6cff18 70%);
-             border:2px solid #4d7cff88;
-             box-shadow:0 6px 18px rgba(0,0,0,.4), inset 0 -6px 14px rgba(0,0,0,.35);
-             transition: transform .08s, box-shadow .12s, border-color .12s; }
+             user-select:none; font-size:14px; font-weight:700; color:#2b2118;
+             background: radial-gradient(circle at 50% 40%, rgba(77,124,255,.30), rgba(77,124,255,.10) 70%);
+             border:2px solid #4d7cffaa;
+             box-shadow:0 6px 16px rgba(70,55,30,.25), inset 0 -6px 14px rgba(70,55,30,.12);
+             transition: transform .08s, box-shadow .12s, border-color .12s; font-family:inherit; }
   .headpad.press { transform:scale(.93); border-color:#ff69b4;
-                   box-shadow:0 2px 8px rgba(0,0,0,.5), inset 0 -3px 10px rgba(0,0,0,.4);
-                   background: radial-gradient(circle at 50% 40%, #ff69b455, #ff69b418 70%); }
+                   box-shadow:0 2px 8px rgba(70,55,30,.3), inset 0 -3px 10px rgba(70,55,30,.15);
+                   background: radial-gradient(circle at 50% 40%, rgba(255,105,180,.42), rgba(255,105,180,.14) 70%); }
 
   /* Peer toggle */
-  .peerrow { display:flex; gap:8px; align-items:center; background:rgba(255,255,255,.04);
-             border-radius:10px; padding:8px 10px; }
-  .peerlabel { flex:1; font-size:10px; color:#ccc; }
-  .sw { width:38px; height:22px; border-radius:12px; background:#3a3d4a; position:relative;
+  .peerrow { display:flex; gap:8px; align-items:center; background:#fdf9ee;
+             border:1px solid #d9c9a3; border-radius:10px; padding:8px 10px; }
+  .peerlabel { flex:1; font-size:10px; color:#4a3d2a; }
+  .sw { width:38px; height:22px; border-radius:12px; background:#c9b78e; position:relative;
         cursor:pointer; flex:none; transition: background .2s; }
   .sw::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px;
-               border-radius:50%; background:#fff; transition:left .2s; }
+               border-radius:50%; background:#fffdf6; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   .sw.on { background:#34c759; }
   .sw.on::after { left:18px; }
-  .peerbtn { flex:none; font-size:10px; padding:6px 10px; border-radius:8px; border:1px solid #4d7cff88;
-             background:#4d7cff33; color:#cfe0ff; cursor:pointer; }
+  .peerbtn { flex:none; font-size:10px; padding:6px 10px; border-radius:8px; border:1px solid #5b4b8a;
+             background:#5b4b8a33; color:#4a3d70; cursor:pointer; font-family:inherit; }
   .peerbtn:disabled { opacity:.35; cursor:default; }
 
   /* Idle dim + auto-sleep overlay (mirrors firmware backlight/sleep timers) */
@@ -139,21 +147,34 @@
 
   /* Sound preset rows (mirrors the app's custom-sound manager) */
   .sndrow { display:flex; gap:6px; align-items:center; margin-bottom:6px;
-            background:rgba(255,255,255,.04); border-radius:10px; padding:7px 9px; }
-  .sndname { width:58px; font-size:10px; color:#ccc; }
-  .chip { font-size:9px; padding:2px 7px; border-radius:9px; background:#ffffff1a; color:#bbb; }
-  .chip.custom { background:#ff69b488; color:#fff; }
-  .minibtn { font-size:9px; padding:5px 8px; border-radius:8px; border:1px solid #3a3d4a;
-             background:#1c1e26; color:#ddd; cursor:pointer; margin-left:auto; }
+            background:#fdf9ee; border:1px solid #d9c9a3; border-radius:10px; padding:7px 9px; }
+  .sndname { width:58px; font-size:10px; color:#4a3d2a; }
+  .chip { font-size:9px; padding:2px 7px; border-radius:9px; background:#e7dcc0; color:#6b5a3e; }
+  .chip.custom { background:#ff69b488; color:#7a1f4c; }
+  .minibtn { font-size:9px; padding:5px 8px; border-radius:8px; border:1px solid #cbb98f;
+             background:#fffdf6; color:#4a3d2a; cursor:pointer; margin-left:auto; font-family:inherit; }
   .minibtn + .minibtn { margin-left:4px; }
-  .minibtn.up { border-color:#4d7cff88; background:#4d7cff33; color:#cfe0ff; }
-  .minibtn.play { border-color:#9b59d088; background:#9b59d033; color:#e2ccff; }
-  button.active { background:#34c759 !important; color:#062 !important; border-color:#34c759 !important; }
+  .minibtn.up { border-color:#4d7cff88; background:#4d7cff2a; color:#3a55b8; }
+  .minibtn.play { border-color:#9b59d088; background:#9b59d02a; color:#6b3fa0; }
+  button.active { background:#34c759 !important; color:#063 !important; border-color:#2ca84f !important; }
+
+  /* Nickname row (NAME command + Puff Puff gag) */
+  .nickrow { display:flex; gap:6px; margin-bottom:4px; }
+  .nickrow input { flex:1; background:#fffdf6; color:#2b2118; border:1px solid #cbb98f;
+                   border-radius:8px; padding:7px 9px; font-size:11px; font-family:inherit;
+                   min-width:0; }
+  .nickrow input:focus { outline:1px solid #5b4b8a; }
+  .nickrow button { font-size:10px; padding:7px 12px; background:#5b4b8a; color:#fdf9ee;
+                    border-color:#5b4b8a; }
+  .nickrow button:hover { background:#4a3d70; }
+  .nickmsg { font-family:Georgia, serif; font-style:italic; font-size:10.5px; color:#5b4b8a;
+             min-height:14px; margin-bottom:2px; }
+  .nickhint { font-size:9.5px; color:#8b7645; font-style:italic; }
 
   /* Brushbuddy's Journal — a torn page from his diary (WHA parchment) */
   .journalcard { background:#f7efdb; border:1.5px solid #6b5a3e; border-radius:10px 14px 10px 16px;
                  padding:12px 14px 10px; position:relative;
-                 box-shadow: inset 0 0 24px rgba(139,118,76,.14), 0 4px 10px rgba(0,0,0,.35);
+                 box-shadow: inset 0 0 24px rgba(139,118,76,.14), 0 4px 10px rgba(70,55,30,.22);
                  min-height:64px; }
   .journalcard::after { content:'🖋'; position:absolute; top:8px; right:10px; font-size:14px;
                         opacity:.75; transform:rotate(12deg); }
@@ -184,7 +205,7 @@
   <button id="btnLow" onclick="demoLowBatt()">Low battery</button>
 </div>
 <div id="status">IDLE</div>
-<div style="font-size:11px;color:#667;margin-top:6px">demo buttons: boot sequence · charging face · low-battery warning</div>
+<div style="font-size:11px;color:#8b7645;font-style:italic;margin-top:6px">demo buttons: boot sequence · charging face · low-battery warning</div>
 
 <div id="remotes">
   <!-- ===== iPhone remote ===== -->
@@ -245,6 +266,14 @@
             <button class="peerbtn" id="peerBtn" disabled>Spot!</button>
           </div>
           <div class="padnote" style="text-align:left">Scans 2 s every 30 s only when ON — off saves battery.</div>
+
+          <div class="sect">His name</div>
+          <div class="nickrow">
+            <input type="text" id="nickField" maxlength="16" placeholder="Give him a name…">
+            <button id="nickSet">Set ✧</button>
+          </div>
+          <div class="nickmsg" id="nickMsg"></div>
+          <div class="nickhint">Careful — do NOT call him “Puff Puff”. He'll grumble.</div>
 
           <div class="sect">Brushbuddy's Journal ✧</div>
           <div id="journalCard" class="journalcard"></div>
@@ -337,10 +366,17 @@ function defaultSound(e){
 }
 
 // snd: explicit reaction sound ('' = silent, undefined = default for expression)
-function setExpr(e, snd){
+// holdMs: expression duration before auto-return to IDLE (firmware emotionUntilMs)
+function setExpr(e, snd, holdMs){
   lastActivity = performance.now();
+  const hold0 = (holdMs === undefined) ? 6000 : holdMs;  // firmware EXPR hold
+  const hold = (e === 'DERPY') ? 12000 : hold0;          // firmware setEmotion override
+  if (e === expr && snd === undefined) {
+    // same expression: firmware still refreshes the hold timer
+    if (e !== 'IDLE' && e !== 'SLEEP') exprUntil = performance.now() + hold;
+    return;
+  }
   const changed = e !== expr;
-  if (!changed && snd === undefined) return;
   if (changed) {
     prevExpr = expr;
     expr = e;
@@ -349,10 +385,10 @@ function setExpr(e, snd){
     updateRemoteUI();
     if (e==='SLEEP') bumpJ('naps');
     if (e==='DERPY') { derpyStart = performance.now(); }
-    if (e==='DRIFT') { driftStart = performance.now(); }
   }
   const s = (snd === undefined) ? defaultSound(e) : (snd || null);
   if (s) play(s);
+  exprUntil = performance.now() + hold;   // loop skips IDLE/SLEEP (like firmware)
 }
 
 function cycle(){
@@ -431,7 +467,7 @@ function fireTrigger(name){
   const r = reactMap[name];
   if (!r) return;
   if (expr === 'SLEEP' && r.emo !== 'SLEEP') { setExpr('IDLE'); play('wake'); }
-  setExpr(r.emo, r.snd);
+  setExpr(r.emo, r.snd, 3500);   // firmware fireTrig hold
   if (r.purr) startPurr(6000);
   // journal
   if (['head','double','triple','hold','overpet','pat'].includes(name)) bumpJ('pets');
@@ -465,9 +501,11 @@ function sendCmd(text) {
   } else if (op === 'TOUCH') {
     if (TRIGGER_DEFS.some(([k]) => k === arg)) { fireTrigger(arg); return; }
     wakeIfNeeded();
-    const map = { earL:'SURPRISED', earR:'SURPRISED', nose:'SQUINT',
-                  nap:'SLEEPY', grab:'ANGRY', derpy:'DERPY', drift:'DRIFT' };
-    if (map[arg]) setExpr(map[arg]);
+    // legacy app-only zones with their firmware hold windows
+    const map = { earL:['SURPRISED',2500], earR:['SURPRISED',2500], nose:['SQUINT',3000],
+                  nap:['SLEEPY',4500], grab:['ANGRY',3500], derpy:['DERPY',3000],
+                  drift:['DRIFT',3000] };
+    if (map[arg]) setExpr(map[arg][0], undefined, map[arg][1]);
   } else if (op === 'FOOD') {
     if (arg === 'love' || arg === 'hate') fireTrigger(arg);
   } else if (op === 'PURR') {
@@ -475,6 +513,25 @@ function sendCmd(text) {
     else { wakeIfNeeded(); startPurr(Math.min(parseInt(arg) || 5000, 30000)); }
   } else if (op === 'PEER') {
     setPeer(arg === 'on');
+  } else if (op === 'NAME') {
+    // NAME,<text> — nickname + canon gag (mirrors firmware exactly)
+    const trimmed = arg.trim();
+    if (!trimmed) return;
+    simNickname = trimmed;
+    try { localStorage.setItem('bbNickname', trimmed); } catch(e){}
+    const field = document.getElementById('nickField');
+    if (field) field.value = trimmed;
+    const low = trimmed.toLowerCase();
+    if (['puff puff','puffpuff','puff-puff','funfun'].includes(low)) {
+      wakeIfNeeded();
+      setExpr('SQUINT', 'grumble', 3000);
+      shakeUntil = performance.now() + 800;
+      setNickMsg('😤 He squinted, grumbled and wiggled — he <i>hates</i> that name.');
+    } else {
+      wakeIfNeeded();
+      setExpr('HAPPY', 'phee', 3000);
+      setNickMsg('✧ He perked right up at that name!');
+    }
   } else if (op === 'SOUND') {
     if (VALID_SOUNDS.includes(arg)) {
       if (expr === 'SLEEP' && arg !== 'sleep' && arg !== 'sleeploop') setExpr('IDLE');
@@ -583,7 +640,9 @@ function headPadDown(){
   hp.taps = (now - hp.lastTap > 700) ? 1 : hp.taps + 1;
   hp.lastTap = now;
   document.getElementById('phHead').classList.add('press');
-  clearTimeout(hp.holdTimer); clearTimeout(hp.decayTimer); clearTimeout(hp.overTimer);
+  clearTimeout(hp.holdTimer); clearTimeout(hp.overTimer); clearTimeout(hp.decayTimer);
+  // firmware decays taps 700 ms after the last PRESS (not the release)
+  hp.decayTimer = setTimeout(() => { hp.taps = 0; }, 700);
   if (hp.taps === 2) sendCmd('TOUCH,double');
   else if (hp.taps === 3) sendCmd('TOUCH,triple');
   else if (hp.taps >= 4) { hp.taps = 0; sendCmd('TOUCH,pat'); }
@@ -601,7 +660,6 @@ function headPadUp(){
   document.getElementById('phHead').classList.remove('press');
   clearTimeout(hp.holdTimer);
   clearTimeout(hp.overTimer);
-  hp.decayTimer = setTimeout(() => { hp.taps = 0; }, 700);
 }
 (function wireHeadPad(){
   const pad = document.getElementById('phHead');
@@ -628,7 +686,7 @@ function setPeer(on){
     // firmware greeting: wake, then HAPPY + chirp
     if (!peerOn) return;
     wakeIfNeeded();
-    setExpr('HAPPY', 'chirp');
+    setExpr('HAPPY', 'chirp', 3500);   // firmware peer greeting hold
     bumpJ('greetz');
   });
 })();
@@ -736,13 +794,21 @@ window.addEventListener('keydown', () => { lastActivity = performance.now(); });
 let chargingSim = false;
 let chgStart = 0;            // plug-in moment: green flood → bubble-away
 let batt = 91;
-let bootStart = 0, bootTimer = 0;
+let bootStart = 0;
 let lastBattPoll = 0, lastBattTick = 0, lastBattWarn = -1e9;
 let sndPendingPreset = null;
 
 // Canon cuteness state (mirrors firmware)
 let lastDream = 0, dreamUntil = 0, dreamGap = 25000;
 let hmphUntil = 0, lastHmph = 0, hmphGap = 60000;
+let shakeUntil = 0;                 // name-gag wobble (mirrors firmware)
+let exprUntil = 0;                  // emotion hold window (firmware emotionUntilMs)
+let simNickname = 'Brushbuddy';
+try { simNickname = localStorage.getItem('bbNickname') || 'Brushbuddy'; } catch(e){}
+
+// Per-eye saccade glances (ported from firmware updateEye — random, independent)
+function mkGlance(){ return { lx: 0, ly: 0, last: 0, next: 1500 }; }
+const glanceL = mkGlance(), glanceR = mkGlance();
 
 // Journal counters (persisted locally, mirrors the device's NVS diary)
 let journal = { pets: 0, feeds: 0, naps: 0, greetz: 0, dreams: 0 };
@@ -758,8 +824,6 @@ function bumpJ(key) {
 
 // Derpy state
 let derpyStart = 0;
-// Drift state
-let driftStart = 0;
 
 function updateBlink(dt){
   // skip blink in sleep/sleepy/derpy (derpy handles its own)
@@ -771,13 +835,12 @@ function updateBlink(dt){
     if (openness<=0) { blinkPhase=2; }
   } else if (blinkPhase===2) {
     openness = Math.min(1, openness + dt/120);
-    if (openness>=1) { blinkPhase=0; blinkTimer=0; nextBlink=2000+Math.random()*3000; }
+    if (openness>=1) { blinkPhase=0; blinkTimer=0; nextBlink=2800+Math.random()*2400; }
   }
 }
 
 // Boot greeting: eyes ease open over 0.7 s (smoothstep) + wake coo + 4 s HAPPY
 function startBoot(){
-  clearTimeout(bootTimer);
   bootStart = performance.now();
   expr = 'HAPPY';
   prevExpr = 'HAPPY';
@@ -786,10 +849,10 @@ function startBoot(){
   blinkPhase = 0;
   blinkTimer = 0;
   nextBlink = 1500;
+  exprUntil = performance.now() + 4000;   // firmware boot: 4 s HAPPY → IDLE
   document.getElementById('status').textContent = 'HAPPY';
   updateRemoteUI();
   play('wake');
-  bootTimer = setTimeout(() => { if (expr === 'HAPPY') setExpr('IDLE'); }, 4000);
 }
 
 function updateBlinkBoot(dt){
@@ -899,6 +962,21 @@ function renderJournal(){
   });
 }
 
+// ---------- Nickname (NAME command + canon gag, mirrors the app) ----------
+function setNickMsg(html){
+  const m = document.getElementById('nickMsg');
+  if (m) m.innerHTML = html;
+}
+(function wireNick(){
+  const f = document.getElementById('nickField');
+  const b = document.getElementById('nickSet');
+  if (f) {
+    f.value = simNickname;
+    f.addEventListener('keydown', e => { if (e.key === 'Enter') sendCmd('NAME,' + f.value); });
+  }
+  if (b && f) b.addEventListener('click', () => sendCmd('NAME,' + f.value));
+})();
+
 function derpyOpenness(isLeft, now){
   const elapsed = (now - derpyStart) / 1000;
   // Slow woozy blink at 2× speed: 3.5 s per eye; the right eye starts closing
@@ -916,25 +994,6 @@ function derpyOpenness(isLeft, now){
     return u*u*(3-2*u);
   }
   return 1.0;                          // open for the rest of the cycle
-}
-
-function driftOffset(isLeft, now){
-  const elapsed = (now - driftStart) / 1000;
-  // very slow drift: 3.5s drift apart, 1.0s snap back, repeat every 6s
-  const cycle = elapsed % 6.0;
-  let x = 0;
-  if (cycle < 3.5) {
-    const u = cycle / 3.5;
-    x = u*u*(3-2*u) * 34;
-  } else if (cycle < 4.5) {
-    const u = (cycle-3.5)/1.0;
-    x = 34*(1 - u*u*(3-2*u));
-  } else {
-    x = 0;
-  }
-  // subtle wobble so eyes move around a little
-  x += Math.sin(elapsed*0.7 + (isLeft?0:1.2)) * 4;
-  return isLeft ? -x : x;
 }
 
 function lerpCur(target, dt){
@@ -994,21 +1053,33 @@ function drawEye(cx, cy, e, isLeft, t, op){
     case 'SLEEPY': py=8; break;
     case 'LOOK_L': px=-24; py=-2; break;
     case 'LOOK_R': px=24; py=-2; break;
-    case 'DRIFT': px = driftOffset(isLeft, performance.now()); py = Math.sin(performance.now()/1000*0.5 + (isLeft?0:Math.PI))*3; break;
+    case 'DRIFT': px = isLeft ? -26 : 26; py = 0; break;   // firmware: static drift, lerp animates it
     default: break;
   }
-  if (e==='IDLE') {
-    // balanced: quick but smooth saccades
-    px = Math.sin(t*1.1)*14 + Math.sin(t*2.3)*6;
-    py = Math.cos(t*0.8)*6 + Math.cos(t*1.9)*3;
+  const hmphActive = (e === 'IDLE' && performance.now() < hmphUntil);
+
+  // IDLE/SQUINT saccades — ported exactly from firmware updateEye:
+  // random targets, independent per eye, next glance 1400–3200 ms
+  if (e === 'IDLE' || e === 'SQUINT') {
+    const g = isLeft ? glanceL : glanceR;
+    const nowMs = performance.now();
+    if (nowMs - g.last > g.next) {
+      g.lx = Math.floor(Math.random() * 45) - 22;
+      g.ly = (e === 'SQUINT') ? 0 : Math.floor(Math.random() * 30) - 14;
+      g.last = nowMs;
+      g.next = 1400 + Math.random() * 1800;
+    }
+    px = g.lx;
+    py = g.ly;
   }
+
   if (e==='DERPY') {
     // eyes look slightly inward
     px = isLeft ? 6 : -6;
   }
 
   // hmph: proud pupils-high moment (remote pad still wins if steering)
-  if (e === 'IDLE' && performance.now() < hmphUntil) py = -13;
+  if (hmphActive) py = -13;
 
   // Remote pad steers the gaze (mirrors firmware remoteGazeMs override)
   if (performance.now() < gaze.until) {
@@ -1024,6 +1095,9 @@ function drawEye(cx, cy, e, isLeft, t, op){
   st.y += (py - st.y) * k;
   px = st.x;
   py = st.y;
+
+  // name-gag wobble (mirrors firmware shakeUntilMs)
+  if (performance.now() < shakeUntil) px += Math.sin(performance.now() * 0.055) * 4;
 
   // smooth lerp pupil toward target
   // (use cur.pr already; px/py applied directly for snappy feel)
@@ -1219,8 +1293,13 @@ function loop(now){
     lastBattPoll = now;
     if (batt <= 15 && !chargingSim && expr !== 'SLEEP' && now - lastBattWarn > 600000) {
       lastBattWarn = now;
-      setExpr('SLEEPY');   // default sound: grumble — the low-battery warning
+      setExpr('SLEEPY', undefined, 2500);  // firmware low-batt warning hold
     }
+  }
+
+  // Expression hold window: return to IDLE like the firmware's emotionUntilMs
+  if (exprUntil && now > exprUntil && expr !== 'IDLE' && expr !== 'SLEEP') {
+    setExpr('IDLE');
   }
 
   // Idle mirroring firmware: dim at 30 s, auto-sleep at 5 min
