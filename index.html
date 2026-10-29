@@ -377,12 +377,12 @@
   <button id="btnLow" onclick="demoLowBatt()">Low battery</button>
 </div>
 <div id="status">IDLE</div>
-<div style="font-size:11px;color:#8b7645;font-style:italic;margin-top:6px">demo buttons: boot sequence · charging face · low-battery warning</div>
+<div style="font-size:11px;color:#8b7645;font-style:italic;margin-top:6px">try him: wake-up · charging · low battery</div>
 
 <div id="remotes">
   <!-- ===== iPhone remote ===== -->
   <div>
-    <div class="rlabel">◆ iPhone remote (Bluetooth LE)</div>
+    <div class="rlabel">◆ The iPhone remote</div>
     <div class="iphone">
       <div class="screen">
         <div class="island"></div>
@@ -415,10 +415,10 @@
           <div class="sect">Expressions</div>
           <div class="grid c4" id="phExprGrid"></div>
 
-          <div class="sect">Touch — head pad</div>
+          <div class="sect">Petting his head</div>
           <div class="headpad-wrap">
             <div class="headpad" id="phHead"><span>head</span></div>
-            <div class="padnote">tap · 2× double · 3× triple · 4×+ pat · hold 1.2 s</div>
+            <div class="padnote">tap, double-tap, triple-tap, lots of taps, or just hold</div>
           </div>
 
           <div class="sect">Sensors</div>
@@ -432,12 +432,12 @@
 
           <div class="sect">His sound presets</div>
           <div id="sndList"></div>
-          <div class="padnote" style="text-align:left">Upload any mp3/wav — plays in this session. The real app stores it on Brushbuddy (NVS-backed).</div>
+          <div class="padnote" style="text-align:left">Give him a new sound and it plays right away. The real Brushbuddy keeps it as his own.</div>
           <input type="file" id="sndFile" accept="audio/*" style="display:none">
           </div>
 
           <div class="itabpage" id="tpTriggers">
-          <div class="sect">Triggers → reaction</div>
+          <div class="sect">His reactions</div>
           <div id="trigList"></div>
 
           <div class="sect">Food</div>
@@ -452,7 +452,7 @@
             <div class="sw" id="peerSw"></div>
             <button class="peerbtn" id="peerBtn" disabled>Spot!</button>
           </div>
-          <div class="padnote" style="text-align:left">Scans 2 s every 30 s only when ON — off saves battery.</div>
+          <div class="padnote" style="text-align:left">He only looks for a friend when this is on.</div>
 
           <div class="sect">His name</div>
           <div class="nickrow">
@@ -460,7 +460,7 @@
             <button id="nickSet">Set ✧</button>
           </div>
           <div class="nickmsg" id="nickMsg"></div>
-          <div class="nickhint">Careful — do NOT call him “Puff Puff”. He'll grumble.</div>
+          <div class="nickhint">Careful: he does NOT like being called “Puff Puff”.</div>
 
           <div class="sect">Brushbuddy's Journal ✧</div>
           <div id="journalCard" class="journalcard"></div>
@@ -470,11 +470,11 @@
             <div class="fwrow">
               <button id="fwCheck">Check for updates</button>
               <button id="fwInstall" class="fwgo" style="display:none">Install v1.2 ✧</button>
-              <button id="fwReboot" class="fwgo" style="display:none">Reboot &amp; update ✧</button>
+              <button id="fwReboot" class="fwgo" style="display:none">Restart &amp; finish ✧</button>
             </div>
-            <div class="fwstatus" id="fwStatus">Running v1.1</div>
+            <div class="fwstatus" id="fwStatus">Version v1.1</div>
             <div class="fwbar" id="fwBar"><div class="fwfill" id="fwFill"></div></div>
-            <div class="fwnote">Demo of the app flow — the real app fetches an encrypted container from the public releases repo.</div>
+            <div class="fwnote">A preview of how updating him will work in the app.</div>
           </div>
           </div>
         </div>
@@ -486,7 +486,7 @@
         </div>
       </div>
     </div>
-    <div class="rnote">Same commands the real app sends over BLE — wired to the eyes above.</div>
+    <div class="rnote">Everything you press here brings him to life up above.</div>
   </div>
 
   <!-- ===== Apple Watch remote ===== -->
@@ -734,7 +734,7 @@ function sendCmd(text) {
       wakeIfNeeded();
       setExpr('SQUINT', 'grumble', 3000);
       shakeUntil = performance.now() + 800;
-      setNickMsg('😤 He squinted, grumbled and wiggled — he <i>hates</i> that name.');
+      setNickMsg('😤 He pulled a face at that one. He <i>really</i> doesn’t like it.');
     } else {
       wakeIfNeeded();
       setExpr('HAPPY', 'phee', 3000);
@@ -1623,13 +1623,13 @@ function fwStatusText() {
   const el = document.getElementById('fwStatus');
   if (!el) return;
   const map = {
-    idle: `Running ${simVersion}`,
-    checking: 'Checking the releases repo…',
-    uptodate: `Up to date ✧ (running ${simVersion})`,
-    available: 'v1.2 is available ✧',
-    receiving: `Receiving update… ${fwPct}%`,
-    done: 'Image verified ✓ — ready to reboot',
-    rebooting: 'Rebooting into the new firmware…'
+    idle: `Version ${simVersion}`,
+    checking: 'Looking for updates…',
+    uptodate: `He’s up to date ✧ (version ${simVersion})`,
+    available: 'A new version is waiting ✧',
+    receiving: `Bringing it over… ${fwPct}%`,
+    done: 'All good ✓! Ready to restart.',
+    rebooting: 'Restarting…'
   };
   el.textContent = map[fwState] || '';
   const ver = document.getElementById('phVer'); if (ver) ver.textContent = simVersion;
@@ -1680,6 +1680,42 @@ function fwReboot() {
   if (r) r.addEventListener('click', fwReboot);
   fwStatusText();
 })();
+
+// Update-complete screen on his eyes (mirrors the firmware's drawUpdateScreen:
+// both displays show the same green check + version + UPDATED)
+function drawUpdateScreen(now) {
+  const t = now / 1000;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, 320, 160);
+  const pulse = 0.85 + 0.15 * Math.sin(t * 4);
+  const rw = 7 * pulse;
+  const blinkOn = Math.sin(t * 6) > 0;
+  for (const ox of [0, 160]) {          // left eye, then right eye
+    const P = [[52, 84], [74, 104], [112, 58]];   // checkmark path (160-space)
+    const seg = (a, b, n) => {
+      ctx.fillStyle = '#00e000';
+      for (let i = 0; i <= n; i++) {
+        const u = i / n;
+        ctx.beginPath();
+        ctx.arc(a[0] + (b[0] - a[0]) * u + ox, a[1] + (b[1] - a[1]) * u, rw, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+    seg(P[0], P[1], 10);                // short stroke
+    seg(P[1], P[2], 14);                // long stroke
+    ctx.fillStyle = blinkOn ? '#fff' : '#555';
+    ctx.beginPath(); ctx.arc(38 + ox, 46, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = blinkOn ? '#555' : '#fff';
+    ctx.beginPath(); ctx.arc(126 + ox, 106, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px Georgia, serif';
+    ctx.fillText(simVersion, 80 + ox, 44);
+    ctx.fillStyle = '#00e000';
+    ctx.font = 'bold 26px Georgia, serif';
+    ctx.fillText('UPDATED', 80 + ox, 130);
+  }
+}
 
 let last = performance.now();
 function loop(now){
@@ -1765,6 +1801,9 @@ function loop(now){
   // neighbour Brushbuddy №2 (conversation partner)
   updateU2(dt, now);
   drawUnit2(now);
+
+  // firmware update complete → his eyes announce it (mirrors drawUpdateScreen)
+  if (fwState === 'done' || fwState === 'rebooting') drawUpdateScreen(now);
 
   requestAnimationFrame(loop);
 }
