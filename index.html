@@ -101,11 +101,11 @@
   .sidebtn { position:absolute; right:-7px; top:124px; width:7px; height:44px; background:#4a4d58; border-radius:4px; }
   .wscreen { width:100%; height:100%; background:#f4ecd7; border-radius:44px; overflow:hidden;
              position:relative; display:flex; flex-direction:column; color:#2b2118; }
-  .wstatus { display:flex; justify-content:space-between; font-size:10px; color:#6b5a3e;
-             padding:12px 18px 2px; font-weight:600; }
-  .wbody { flex:1; display:flex; flex-direction:column; padding:4px 12px 4px; min-height:0; }
-  .wtabbar { display:flex; gap:3px; padding:3px; margin:0 10px 10px;
-             background:rgba(107,90,62,.14); border-radius:999px; }
+  .wstatus { display:flex; justify-content:space-between; font-size:9.5px; color:#6b5a3e;
+             padding:10px 18px 0; font-weight:600; }
+  .wbody { flex:1; display:flex; flex-direction:column; padding:2px 12px 0; min-height:0; }
+  .wtabbar { display:flex; gap:3px; padding:3px; margin:0 10px 8px;
+             background:rgba(107,90,62,.14); border-radius:999px; flex:none; }
   .wtab { flex:1; text-align:center; font-size:9.5px; padding:7px 0; border-radius:999px;
           background:transparent; color:#6b5a3e; cursor:pointer; font-family:inherit;
           font-weight:600; transition:background .18s, color .18s, box-shadow .18s; }
@@ -113,11 +113,13 @@
              box-shadow:0 2px 6px rgba(70,55,30,.30); }
   .wpage { flex:1; display:none; flex-direction:column; min-height:0; }
   .wpage.on { display:flex; }
-  .wexpr { font-size:13.5px; font-weight:700; color:#2b2118; text-align:center;
-           margin:4px 0 6px; font-style:italic; }
+  .wexpr { font-size:12.5px; font-weight:700; color:#2b2118; text-align:center;
+           margin:3px 0 4px; font-style:italic; flex:none; }
+  /* Pad page centers in whatever room is left — never spills onto the tabs */
+  #wpPad { align-items:center; justify-content:center; overflow:hidden; }
   /* Proper circular joystick (was stretched into an oval by flex:1) */
-  .wpad { position:relative; width:min(100%,150px); aspect-ratio:1; flex:none;
-          margin:4px auto 0; border-radius:50%; touch-action:none; cursor:grab;
+  .wpad { position:relative; width:min(100%,114px); aspect-ratio:1; flex:none;
+          margin:0 auto; border-radius:50%; touch-action:none; cursor:grab;
           background: radial-gradient(circle at 50% 36%, #fffdf6, #e6dcc4 72%);
           border:2px solid rgba(107,90,62,.5);
           box-shadow: inset 0 5px 14px rgba(70,55,30,.20), 0 5px 14px rgba(70,55,30,.18);
