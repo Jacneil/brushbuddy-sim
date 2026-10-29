@@ -1579,23 +1579,42 @@ function drawUnit2(now) {
   }
 }
 
-// ---------- Peer conversation (positive-only script, mirrors CONV_SCRIPT) ----------
+// ---------- Peer conversation (positive-only, mirrors the firmware CONV_SCRIPT) ----------
+// 11 beats over ~15 s: fixed opening & three SHARED moments (surprise / nod /
+// love finale); the conductor randomizes the middle turns — here we roll them
+// too so every "Spot!" chat feels different.
 let simConvRunning = false;
 function startSimConversation() {
   if (simConvRunning) return;
   simConvRunning = true;
   bumpJ('greetz');
   wakeIfNeeded();
+  const poolE = ['LOOK_L', 'LOOK_R', 'DERPY', 'HAPPY', 'SURPRISED', 'LOVE'];
+  const poolS = ['chirp', 'phee', 'wake'];
+  const rnd = a => a[Math.floor(Math.random() * a.length)];
+  let lastE = '';
+  const mid = () => { let e = rnd(poolE); if (e === lastE) e = rnd(poolE); lastE = e; return [e, rnd(poolS)]; };
+  // [time, who: 1 = us, 2 = neighbour, 3 = BOTH]
+  const steps = [
+    [    0, 1, 'SURPRISED', 'chirp'],   // "oh! hello!"
+    [ 1400, 2, 'HAPPY',     'phee' ],   // "phee~"
+    [ 3000, 1, ...mid()],               // ↓ randomized chat turns
+    [ 4400, 2, ...mid()],
+    [ 5800, 3, 'SURPRISED', 'chirp'],   // SHARED surprise: "oh!!"
+    [ 7400, 1, ...mid()],
+    [ 8800, 2, ...mid()],
+    [10200, 1, ...mid()],               // silly beat
+    [11600, 2, ...mid()],
+    [13200, 3, 'HAPPY',     'chirp'],   // SHARED nod
+    [14600, 3, 'LOVE',      'phee' ],   // SHARED adoration finale
+  ];
   const at = (ms, fn) => setTimeout(fn, ms);
-  at(0,    () => setExpr('SURPRISED', 'chirp', 2500));   // conductor: "oh! hello!"
-  at(1600, () => u2React('HAPPY', 'phee'));              // neighbour answers
-  at(3400, () => setExpr('LOOK_L', 'chirp', 2500));      // glancing over, chatting
-  at(5200, () => u2React('LOOK_R', 'phee'));
-  at(7000, () => {                                       // shared happy nod
-    setExpr('HAPPY', 'chirp', 2500);
-    u2React('HAPPY', 'chirp');
-  });
-  at(9800, () => { simConvRunning = false; });
+  for (const [t, who, e, s] of steps) {
+    if (who === 1)      at(t, () => setExpr(e, s, 2500));
+    else if (who === 2) at(t, () => u2React(e, s));
+    else                at(t, () => { setExpr(e, s, 2500); u2React(e, s); });
+  }
+  at(17800, () => { simConvRunning = false; });   // after the finale's 2.5 s hold
 }
 
 // ---------- Firmware update flow (mirrors the app's section; demo states) ----------
