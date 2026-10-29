@@ -444,7 +444,9 @@
           <div id="trigList"></div>
 
           <div class="sect">Food</div>
-          <div class="grid c2" id="phFoodGrid"></div>
+          <div class="grid c1" id="phFoodGrid"></div>
+          <div class="sect" style="margin-top:10px">Rival</div>
+          <div class="grid c1" id="phRivalGrid"></div>
           </div>
 
           <div class="itabpage" id="tpDiary">
@@ -695,10 +697,9 @@ function fireTrigger(name){
   if (expr === 'SLEEP' && r.emo !== 'SLEEP') { setExpr('IDLE'); play('wake'); }
   setExpr(r.emo, r.snd, 3500);   // firmware fireTrig hold
   if (r.purr) startPurr(6000);
-  if (name === 'love') inkUntil = performance.now() + 60000;  // fed ink → smudge
   // journal
   if (['head','double','triple','hold','overpet','pat'].includes(name)) bumpJ('pets');
-  else if (name === 'love' || name === 'hate') bumpJ('feeds');
+  else if (name === 'love') bumpJ('feeds');   // only Ink is a snack — Rival isn't food
 }
 const clampf = (v, lo, hi) => v < lo ? lo : (v > hi ? hi : v);
 const VALID_SOUNDS = ['phee','hiss','chirp','grumble','wake','sleep','sleeploop'];
@@ -817,7 +818,10 @@ const TOUCH_KEYS = [
   ['Head', 'head', '#34c759']   // the only physical touch sensor
 ];
 const FOOD_KEYS = [
-  ['Conjuring Ink ♥','love','#ff69b4'], ['Rival ✕','hate','#ff453a']
+  ['Conjuring Ink ♥','love','#ff69b4']
+];
+const RIVAL_KEYS = [
+  ['Rival Brushbuddy ✕','hate','#ff453a']
 ];
 const SOUND_KEYS = ['phee','hiss','chirp','grumble','wake'];
 
@@ -830,6 +834,7 @@ const SENSOR_KEYS = [
 fillGrid('phExprGrid',  EXPR_KEYS.map(([l,c,g]) => [l, c, 'EXPR,' + l, g]));
 fillGrid('phSensorGrid', SENSOR_KEYS.map(([l,k,c,g]) => [l, c, 'TOUCH,' + k, g]));
 fillGrid('phFoodGrid',  FOOD_KEYS.map(([l,k,c]) => [l, c, 'FOOD,' + k]));
+fillGrid('phRivalGrid', RIVAL_KEYS.map(([l,k,c]) => [l, c, 'FOOD,' + k]));
 fillGrid('phSoundGrid', SOUND_KEYS.map(s => [s[0].toUpperCase() + s.slice(1), '#9b59d0', 'SOUND,' + s])
                                       .concat([['Purr 📳', '#ff69b4', 'PURR,5000']]));
 fillGrid('phTouchGrid', TOUCH_KEYS.map(([l,z,c]) => [l, c, 'TOUCH,' + z])); // (div removed — no-op)
@@ -1078,9 +1083,8 @@ function bumpJ(key) {
   renderJournal();
 }
 
-// Refinement state (mirrors firmware: progress eyes / peek / ink / journal depth)
+// Refinement state (mirrors firmware: progress eyes / peek / journal depth)
 let peekHideUntil = 0;          // peek-a-boo: lids shut until then
-let inkUntil = 0;               // ink smudge fades over 60 s after feeding
 let napStartedAt = 0, napMaxMs = 0;
 let exprCounts = {};
 try { const c = JSON.parse(localStorage.getItem('bbExprCounts') || 'null'); if (c) exprCounts = c; } catch(e){}
@@ -1340,19 +1344,6 @@ function drawEye(cx, cy, e, isLeft, t, op){
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(cx,cy,scleraR,0,Math.PI*2); ctx.fill();
 
-  // ink smudge — fed Conjuring Ink, fades over a minute (drawn under the pupil)
-  if (performance.now() < inkUntil) {
-    const k = (inkUntil - performance.now()) / 60000;
-    const r1 = 11 * k, r2 = 7 * k;
-    if (r1 > 1) {
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(cx - 26, cy - 28, r1, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx - 14, cy - 34, r2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx - 32, cy - 16, r2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillRect(cx - 22, cy - 20, 3, 14 * k);   // drip
-    }
-  }
-
   // pupil pos
   let px=0, py=0, pr=Math.round(cur.pr);
   const target = TARGETS[e] || TARGETS.IDLE;
@@ -1456,7 +1447,14 @@ function drawEye(cx, cy, e, isLeft, t, op){
   if (cur.sleepy) {
     ctx.fillStyle = '#000';
     ctx.fillRect(cx-80, cy-80, 160, cur.topLid);
-    ctx.strokeStyle='#222'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx-68,cy-2); ctx.lineTo(cx+68,cy-2); ctx.stroke();
+    // crease line RIDEs the descending lid edge (it used to sit at the final
+    // position from frame 1, flashing a dark line on the white before the
+    // lid arrived — the "black line" artifact)
+    if (cur.topLid > 2) {
+      const ly = cy - 80 + cur.topLid;
+      ctx.strokeStyle='#222'; ctx.lineWidth=1; ctx.beginPath();
+      ctx.moveTo(cx-68, ly); ctx.lineTo(cx+68, ly); ctx.stroke();
+    }
   }
   // angry/hate brow (animated browL/browR)
   if (cur.browL > 0.5) {
@@ -1491,7 +1489,8 @@ function drawEye(cx, cy, e, isLeft, t, op){
     ctx.fillRect(cx-80, cy-80+cur.bottomLid, 160, 160-cur.bottomLid);
   }
 
-  // Charging face (mirrors firmware):
+  // Charging (mirrors firmware): one-shot plug-in flood → bubble away →
+  // normal eyes (no steady overlay — it hid the emotions)
   //   1) plug-in floods the eye with green liquid (0.5 s),
   //   2) the liquid bubbles away like it's boiling off (to 1.8 s),
   //   3) steady state: green hollow bubbles + GREEN lightning bolt.
